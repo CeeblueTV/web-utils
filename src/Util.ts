@@ -127,7 +127,7 @@ export function objectFrom(value: any, params: { withType: boolean; noEmptyStrin
  * @param value iterable input
  * @returns An javascript object
  */
-function objectEntries(value: any): [string, any][] {
+export function objectEntries(value: any): [string, any][] {
     if (value.entries) {
         return value.entries();
     }
