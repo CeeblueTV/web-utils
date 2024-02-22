@@ -176,10 +176,8 @@ export function stringify(obj: any, params: { space?: string; decimal?: number; 
         // Array!
         let res = '';
         for (const value of obj) {
-            res +=
-                (res ? ',' : '[') +
-                space +
-                stringify(value, Object.assign(params, { recursive: params.recursive - 1 }));
+            res += (res ? ',' : '[') + space;
+            res += stringify(value, Object.assign(params, { recursive: params.recursive - 1 }));
         }
         return (res += space + ']');
     }
@@ -189,7 +187,8 @@ export function stringify(obj: any, params: { space?: string; decimal?: number; 
     }
     let res = '';
     for (const name in obj) {
-        res += (res ? ',' : '{') + space + name + ':' + stringify(obj[name], Object.assign(params, { recursive: params.recursive - 1 }));
+        res += (res ? ',' : '{') + space + name + ':';
+        res += stringify(obj[name], Object.assign(params, { recursive: params.recursive - 1 }));
     }
     return (res += space + '}');
 }

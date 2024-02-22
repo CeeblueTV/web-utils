@@ -40,7 +40,7 @@ export enum Type {
     WEBRTS = 'webrts',
     WEBRTC = 'webrtc',
     META = 'meta',
-    DATA = 'data',
+    DATA = 'data'
 }
 
 /**
@@ -83,10 +83,9 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
     if (params.accessToken) {
         url.searchParams.set('id', params.accessToken);
     }
-   
+
     for (const key in params.query) {
         url.searchParams.set(key, params.query[key]);
     }
     return url;
 }
-
