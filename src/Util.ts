@@ -188,6 +188,23 @@ export function stringify(obj: any, params: { space?: string; decimal?: number; 
     return (res += space + '}');
 }
 
+/**
+ * Encode a string to a binary representation
+ * @param value string value to convert
+ * @returns binary conversion
+ */
 export function toBin(value: string): Uint8Array {
     return _encoder.encode(value);
+}
+
+/**
+ * Execute a promise in a safe way with a timeout if caller doesn't resolve it in the accurate time
+ */
+export function safePromise<T>(timeout: number, promise: Promise<T>) {
+    // Returns a race between our timeout and the passed in promise
+    let timer: NodeJS.Timeout;
+    return Promise.race([
+        promise instanceof Promise ? promise : new Promise(promise),
+        new Promise((resolve, reject) => (timer = setTimeout(() => reject('timed out in ' + timeout + 'ms'), timeout)))
+    ]).finally(() => clearTimeout(timer));
 }
