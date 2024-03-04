@@ -10,15 +10,10 @@ const _encoder = new TextEncoder();
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const _perf = performance; // to increase x10 now performance!
-const __lib__version__ = '?'; // will be replaced on building by library version
 
 /**
  * Some basic utility functions
  */
-/**
- * Version of the library
- */
-export const VERSION = __lib__version__;
 
 /**
  * An empty lambda function, pratical to disable default behavior of function or events which are not expected to be null

@@ -16,3 +16,7 @@ export { Queue } from './src//Queue';
 export { SDP } from './src/SDP';
 export * as Util from './src/Util';
 export { WebSocketReliable } from './src/WebSocketReliable';
+
+const __lib__version__ = '?'; // will be replaced on building by project version
+
+export const VERSION: string = __lib__version__;
