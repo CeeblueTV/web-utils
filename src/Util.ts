@@ -149,7 +149,7 @@ export function objectEntries(value: any): [string, any][] {
 // Write, Edit and Run your Javascript code using JS Online Compiler
 export function stringify(obj: any, params: { space?: string; decimal?: number; recursive?: number } = {}): string {
     params = Object.assign({ space: ' ', decimal: 2, recursive: 1 }, params);
-    if (!obj) {
+    if (obj == null) {
         return String(obj);
     }
     const error = obj.error || obj.message;
