@@ -226,3 +226,18 @@ export function sleep(ms: number) {
         setTimeout(resolve, ms);
     });
 }
+
+/**
+ * fetch help method with few usefull fix:
+ * - throw an string exception if response code is not 200 with the text of the response or uses statusText
+ */
+export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const response = await self.fetch(input, init);
+    if (response.status >= 300) {
+        if (response.body) {
+            throw (await response.text()) || response.statusText;
+        }
+        throw response.statusText;
+    }
+    return response;
+}
