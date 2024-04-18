@@ -1,21 +1,65 @@
-# Ceeblue web framework
+[Usage](#usage) | [Building locally](#building-locally) | [Documentation](#documentation) | [Contribution](#contribution) | [License](#license)
 
-This is a web framework for CeeblueTV's web libraries. It is a collection of tools and utilities that are used across all of CeeblueTV's web projects.
+# Ceeblue Web Utilities
 
-## Installation
+This is a Web base compoments for CeeblueTV's web libraries : a collection of tools and utilities used across all of CeeblueTV's web projects.
 
-You can install the package using npm:
+## Usage
 
+Add the library as a dependency to your npm project using:
 ```bash
 npm install @ceeblue/web-utils
 ```
-
-Or manually add it to your `package.json` file:
-
-```json
-{
-  "dependencies": {
-    "@ceeblue/web-utils": "latest"
-  }
-}
+Then [import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules) the library into your project, for example:
+ ```javascript
+import { Util, ILog } from '@ceeblue/web-utils';
 ```
+> 💡 **TIP**
+> 
+> If your project uses [TypeScript](https://www.typescriptlang.org/), it is recommended to set `"target": "ES6"` in your configuration to align with our usage of ES6 features and ensures that your build will succeed (for those requiring a backwards-compatible [UMD](https://github.com/umdjs/umd) version, a [local build](#building-locally) is advised).
+> Then Defining the compiler option `"moduleResolution": "Node"` in **tsconfig.json** helps with import errors by ensuring that TypeScript uses the correct strategy for resolving imports based on the targeted Node.js version.
+>   ```json
+>   {
+>      "compilerOptions": {
+>         "target": "ES6",
+>         "moduleResolution": "Node"
+>      }
+>   }
+>   ```
+
+## Building locally
+
+1. [Clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) this repository
+2. Enter the `webr-utils` folder and run `npm install` to install packages dependencies.
+3. Execute `npm run build`. The output will be five files placed in the **/dist/** folder:
+   - **web-utils.d.ts** Typescript definitions file
+   - **web-utils.js**: Bundled JavaScript library
+   - **web-utils.js.map**: Source map that associates the bundled library with the original source files
+   - **web-utils.min.js** Minified version of the library, optimized for size
+   - **web-utils.min.js.map** Source map that associates the minified library with the original source files
+
+```
+git clone https://github.com/CeeblueTV/web-utils.git
+cd web-utils
+npm install
+npm run build
+```
+
+## Documentation
+
+This monorepo also contains built-in documentation about the APIs in the library, which can be built using the following npm command:
+```
+npm run build:docs
+```
+You can access the documentation by opening the index.html file in the docs folder with your browser (`./docs/index.html`), or if you have installed and started the [http-server package](https://www.npmjs.com/package/http-server) by navigating to:
+```
+http://localhost:8080/docs/
+```
+
+## Contribution
+
+All contributions are welcome. Please see [our contribution guide](/CONTRIBUTING.md) for details.
+
+## License
+
+By contributing code to this project, you agree to license your contribution under the [GNU Affero General Public License](/LICENSE).
