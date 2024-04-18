@@ -142,13 +142,17 @@ export function objectEntries(value: any): [string, any][] {
  * @param obj Any objects, strings, exceptions, errors, or number
  * @param params.space `''`, allows to configure space in the string representation
  * @param params.decimal `2`, allows to choose the number of decimal to display in the string representation
- * @param params.recursive `false`, allows to serialize recursively every object value,  beware if a value refers to a already parsed value an infinite loop will occur.
+ * @param params.recursive `false`, allows to serialize recursively every object value, beware if a value refers to a already parsed value an infinite loop will occur
+ * @param params.noBin `false`, when set skip binary encoding and write inplace a bin-length information
  * @returns the final string representation
  */
 // Online Javascript Editor for free
 // Write, Edit and Run your Javascript code using JS Online Compiler
-export function stringify(obj: any, params: { space?: string; decimal?: number; recursive?: number } = {}): string {
-    params = Object.assign({ space: ' ', decimal: 2, recursive: 1 }, params);
+export function stringify(
+    obj: any,
+    params: { space?: string; decimal?: number; recursive?: number; noBin?: boolean } = {}
+): string {
+    params = Object.assign({ space: ' ', decimal: 2, recursive: 1, noBin: false }, params);
     if (obj == null) {
         return String(obj);
     }
@@ -183,6 +187,9 @@ export function stringify(obj: any, params: { space?: string; decimal?: number; 
         return _decoder.decode(obj);
     }
     let res = '';
+    if (params.noBin) {
+        return '[' + obj.byteLength + '#bytes]';
+    }
     for (const name in obj) {
         res += (res ? ',' : '{') + space + name + ':';
         res += stringify(obj[name], Object.assign({ ...params }, { recursive: params.recursive - 1 }));
