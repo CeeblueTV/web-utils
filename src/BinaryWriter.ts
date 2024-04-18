@@ -58,16 +58,12 @@ export class BinaryWriter {
         return this.reserve((this._size = size));
     }
 
-    write(data: string | ArrayLike<number>): BinaryWriter {
+    /**
+     * Write binary data
+     * @param data
+     */
+    write(data: ArrayLike<number>): BinaryWriter {
         this.reserve(this._size + data.length);
-        if (typeof data === 'string') {
-            // beware here support just the 255 first bytes (compatible Latin-1)
-            for (let i = 0; i < data.length; ++i) {
-                const value = data.charCodeAt(i);
-                this._data[this._size++] = value > 255 ? 32 : value;
-            }
-            return this;
-        }
         this._data.set(data, this._size);
         this._size += data.length;
         return this;
@@ -116,6 +112,11 @@ export class BinaryWriter {
         return this;
     }
 
+    write64(value: number): BinaryWriter {
+        this.write32(value / 4294967296);
+        return this.write32(value & 0xffffffff);
+    }
+
     writeFloat(value: number): BinaryWriter {
         this.reserve(this._size + 4);
         this.view.setFloat32(this._size, value);
@@ -130,36 +131,18 @@ export class BinaryWriter {
         return this;
     }
 
-    write7Bit(value: number, bytes: number = 5): BinaryWriter {
-        if (bytes > 5) {
-            throw Error("BinaryWriter in JS can't encode more than 32 usefull bits");
+    write7Bit(value: number): BinaryWriter {
+        let byte = value & 0x7f;
+        while ((value = Math.floor(value / 0x80))) {
+            // equivalent to >>=7 for JS!
+            this.write8(0x80 | byte);
+            byte = value & 0x7f;
         }
-        if (!(bytes > 0)) {
-            // negation to catch NaN value
-            throw Error('Have to indicate a positive number of bytes to encode');
-        }
-        let bits = --bytes * 7;
-        const front = value > 0xffffffff ? 0x100 : value >>> bits;
-        if (front) {
-            ++bits;
-            if (front > 0xff) {
-                value = 0xffffffff;
-            }
-        } else {
-            while ((bits -= 7) && !(value >>> bits)) {
-                continue;
-            }
-        }
-
-        while (bits > 1) {
-            this.write8(0x80 | ((value >>> bits) & 0xff));
-            bits -= 7;
-        }
-        return this.write8(value & (bits ? 0xff : 0x7f));
+        return this.write8(byte);
     }
 
     writeString(value: string): BinaryWriter {
-        return this.write7Bit(value.length).write(value);
+        return this.write(_encoder.encode(value)).write8(0);
     }
 
     writeHex(value: string): BinaryWriter {
@@ -171,13 +154,13 @@ export class BinaryWriter {
 
     reserve(size: number): BinaryWriter {
         if (!this._data) {
-            throw new Error('buffer not writable');
+            throw Error('buffer not writable');
         }
         if (size <= this._data.byteLength) {
             return this;
         }
         if (this._isConst) {
-            throw new Error('writing exceeds maximum ' + this._data.byteLength + ' bytes limit');
+            throw Error('writing exceeds maximum ' + this._data.byteLength + ' bytes limit');
         }
 
         --size;
