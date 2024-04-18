@@ -36,11 +36,11 @@ export type Params = {
  * Type of connection
  */
 export enum Type {
-    HESP = 'hesp',
-    WEBRTS = 'webrts',
-    WEBRTC = 'webrtc',
-    META = 'meta',
-    DATA = 'data'
+    HESP = 'HESP',
+    WEBRTS = 'WebRTS',
+    WEBRTC = 'WebRTC',
+    META = 'Meta',
+    DATA = 'Data'
 }
 
 /**
