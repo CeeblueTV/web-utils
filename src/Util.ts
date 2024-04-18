@@ -217,3 +217,12 @@ export function safePromise<T>(timeout: number, promise: Promise<T>) {
         new Promise((resolve, reject) => (timer = setTimeout(() => reject('timed out in ' + timeout + 'ms'), timeout)))
     ]).finally(() => clearTimeout(timer));
 }
+
+/**
+ * Wait in milliseconds, requires a call with await keyword!
+ */
+export function sleep(ms: number) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
+}
