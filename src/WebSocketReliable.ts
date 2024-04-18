@@ -4,6 +4,7 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 
+import { ByteRate } from './ByteRate';
 import { EventEmitter } from './EventEmitter';
 
 /**
@@ -59,6 +60,14 @@ export class WebSocketReliable extends EventEmitter {
      */
     get binaryType(): BinaryType {
         return 'arraybuffer';
+    }
+
+    get recvByteRate(): number {
+        return this._recvByteRate.value();
+    }
+
+    get sendByteRate(): number {
+        return this._sendByteRate.value();
     }
 
     /**
@@ -123,6 +132,8 @@ export class WebSocketReliable extends EventEmitter {
     private _queueing: Array<string | ArrayBuffer | ArrayBufferView>;
     private _queueingBytes: number;
     private _ws?: WebSocket;
+    private _recvByteRate: ByteRate;
+    private _sendByteRate: ByteRate;
     /**
      * Create a WebSocketReliable object, and open it if an url is passed in argument
      * @param url URL of the WebSocket endpoint or null to start the connection later
@@ -133,6 +144,8 @@ export class WebSocketReliable extends EventEmitter {
         this._queueingBytes = 0;
         this._opened = false;
         this._closed = true;
+        this._recvByteRate = new ByteRate();
+        this._sendByteRate = new ByteRate();
         if (url) {
             this.open(url, protocols);
         }
@@ -147,7 +160,10 @@ export class WebSocketReliable extends EventEmitter {
         this._closed = false;
         const ws = (this._ws = new WebSocket(url, protocols));
         ws.binaryType = this.binaryType;
-        ws.onmessage = e => this.onMessage(e.data);
+        ws.onmessage = e => {
+            this._recvByteRate.addBytes(e.data.byteLength ?? e.data.length);
+            this.onMessage(e.data);
+        };
         // Add details and fix close ways
         ws.onclose = (e: CloseEvent) => {
             if (!this._opened) {
@@ -184,7 +200,7 @@ export class WebSocketReliable extends EventEmitter {
             this._queueing.push(message);
             this._queueingBytes += typeof message === 'string' ? message.length : message.byteLength;
         } else {
-            this._ws.send(message);
+            this._send(message);
         }
         return this;
     }
@@ -195,7 +211,7 @@ export class WebSocketReliable extends EventEmitter {
     flush() {
         if (this._ws) {
             for (const message of this._queueing) {
-                this._ws.send(message);
+                this._send(message);
             }
         }
         this._queueing.length = 0;
@@ -218,5 +234,13 @@ export class WebSocketReliable extends EventEmitter {
         this._queueing.length = 0;
         this._queueingBytes = 0;
         this.onClose(error);
+    }
+
+    private _send(message: string | ArrayBuffer | ArrayBufferView) {
+        if (!this._ws) {
+            return;
+        }
+        this._sendByteRate.addBytes(typeof message === 'string' ? message.length : message.byteLength);
+        this._ws.send(message);
     }
 }
