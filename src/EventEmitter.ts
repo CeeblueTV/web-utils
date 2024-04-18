@@ -102,13 +102,7 @@ export class EventEmitter {
         const events = this._event(name);
         events.add(event);
         if (abort) {
-            abort.signal.addEventListener(
-                'abort',
-                () => {
-                    events.delete(event);
-                },
-                { once: true }
-            );
+            abort.signal.addEventListener('abort', () => events.delete(event), { once: true });
         }
     }
 
@@ -128,13 +122,7 @@ export class EventEmitter {
             event(...args); // execute event
         });
         if (abort) {
-            abort.signal.addEventListener(
-                'abort',
-                () => {
-                    events.delete(event);
-                },
-                { once: true }
-            );
+            abort.signal.addEventListener('abort', () => events.delete(event), { once: true });
         }
     }
 
