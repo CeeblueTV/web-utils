@@ -4,6 +4,8 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 
+const _encoder = new TextEncoder();
+
 /**
  * BinaryWriter allows to write data in its binary form
  */
