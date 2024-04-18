@@ -160,7 +160,8 @@ export function stringify(obj: any, params: { space?: string; decimal?: number; 
     if (obj.toFixed) {
         return obj.toFixed(Number(params.decimal) || 0);
     }
-    if (obj.substring || !params.recursive) {
+    // boolean or string type or stop recursivity
+    if (typeof obj === 'boolean' || obj.substring || !params.recursive) {
         // is already a string OR has to be stringified
         return String(obj);
     }
