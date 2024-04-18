@@ -241,3 +241,14 @@ export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promi
     }
     return response;
 }
+
+/**
+ * Extension parser
+ * @param path path to parse
+ * @returns the extension
+ */
+export function parseExtension(path: string): string {
+    const dot = path.lastIndexOf('.');
+    const ext = dot >= 0 && dot > path.lastIndexOf('/') ? path.substring(dot) : '';
+    return ext;
+}
