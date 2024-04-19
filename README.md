@@ -2,7 +2,7 @@
 
 # Ceeblue Web Utilities
 
-This is a Web base compoments for CeeblueTV's web libraries : a collection of tools and utilities used across all of CeeblueTV's web projects.
+This is a basic component library for Ceeblue projects, consisting of a collection of essential tools and utilities used in all Ceeblue web projects.
 
 ## Usage
 
@@ -16,8 +16,8 @@ import { Util, ILog } from '@ceeblue/web-utils';
 ```
 > 💡 **TIP**
 > 
-> If your project uses [TypeScript](https://www.typescriptlang.org/), it is recommended to set `"target": "ES6"` in your configuration to align with our usage of ES6 features and ensures that your build will succeed (for those requiring a backwards-compatible [UMD](https://github.com/umdjs/umd) version, a [local build](#building-locally) is advised).
-> Then Defining the compiler option `"moduleResolution": "Node"` in **tsconfig.json** helps with import errors by ensuring that TypeScript uses the correct strategy for resolving imports based on the targeted Node.js version.
+> If your project uses TypeScript, it is recommended that you set target: "ES6" in your configuration to match our use of ES6 features and ensure that your build will succeed (for those requiring a backward-compatible UMD version, a local build is recommended).
+> Then define the "moduleResolution" compiler option: "Node" in tsconfig.json helps with import failures by ensuring that TypeScript uses the correct import resolution strategy based on the targeted Node.js version.
 >   ```json
 >   {
 >      "compilerOptions": {
@@ -30,8 +30,8 @@ import { Util, ILog } from '@ceeblue/web-utils';
 ## Building locally
 
 1. [Clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) this repository
-2. Enter the `webr-utils` folder and run `npm install` to install packages dependencies.
-3. Execute `npm run build`. The output will be five files placed in the **/dist/** folder:
+2. Got to the `web-utils` folder and run `npm install` to install the packages dependencies.
+3. Run `npm run build`. The output will be five files placed in the **/dist/** folder:
    - **web-utils.d.ts** Typescript definitions file
    - **web-utils.js**: Bundled JavaScript library
    - **web-utils.js.map**: Source map that associates the bundled library with the original source files
@@ -51,10 +51,7 @@ This monorepo also contains built-in documentation about the APIs in the library
 ```
 npm run build:docs
 ```
-You can access the documentation by opening the index.html file in the docs folder with your browser (`./docs/index.html`), or if you have installed and started the [http-server package](https://www.npmjs.com/package/http-server) by navigating to:
-```
-http://localhost:8080/docs/
-```
+You can access the documentation by opening the index.html file in the docs folder with your browser (`./docs/index.html`).
 
 ## Contribution
 
