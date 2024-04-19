@@ -4,6 +4,7 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 import { NetAddress } from './NetAddress';
+import * as Util from './Util';
 
 /**
  * Parameters of connections
@@ -36,11 +37,11 @@ export type Params = {
  * Type of connection
  */
 export enum Type {
-    HESP = 'hesp',
-    WEBRTS = 'webrts',
-    WEBRTC = 'webrtc',
-    META = 'meta',
-    DATA = 'data'
+    HESP = 'HESP',
+    WEBRTS = 'WebRTS',
+    WEBRTC = 'WebRTC',
+    META = 'Meta',
+    DATA = 'Data'
 }
 
 /**
@@ -83,9 +84,10 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
     if (params.accessToken) {
         url.searchParams.set('id', params.accessToken);
     }
-
     for (const key in params.query) {
         url.searchParams.set(key, params.query[key]);
     }
+    // Remove possible extension of streamName
+    params.streamName.substring(0, params.streamName.length - Util.parseExtension(params.streamName).length);
     return url;
 }

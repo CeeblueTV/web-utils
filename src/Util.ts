@@ -142,13 +142,17 @@ export function objectEntries(value: any): [string, any][] {
  * @param obj Any objects, strings, exceptions, errors, or number
  * @param params.space `''`, allows to configure space in the string representation
  * @param params.decimal `2`, allows to choose the number of decimal to display in the string representation
- * @param params.recursive `false`, allows to serialize recursively every object value,  beware if a value refers to a already parsed value an infinite loop will occur.
+ * @param params.recursive `false`, allows to serialize recursively every object value, beware if a value refers to a already parsed value an infinite loop will occur
+ * @param params.noBin `false`, when set skip binary encoding and write inplace a bin-length information
  * @returns the final string representation
  */
 // Online Javascript Editor for free
 // Write, Edit and Run your Javascript code using JS Online Compiler
-export function stringify(obj: any, params: { space?: string; decimal?: number; recursive?: number } = {}): string {
-    params = Object.assign({ space: ' ', decimal: 2, recursive: 1 }, params);
+export function stringify(
+    obj: any,
+    params: { space?: string; decimal?: number; recursive?: number; noBin?: boolean } = {}
+): string {
+    params = Object.assign({ space: ' ', decimal: 2, recursive: 1, noBin: false }, params);
     if (obj == null) {
         return String(obj);
     }
@@ -157,10 +161,12 @@ export function stringify(obj: any, params: { space?: string; decimal?: number; 
         // is a error!
         obj = error;
     }
+    // number
     if (obj.toFixed) {
         return obj.toFixed(Number(params.decimal) || 0);
     }
-    if (obj.substring || !params.recursive) {
+    // boolean or string type or stop recursivity
+    if (typeof obj === 'boolean' || obj.substring || !params.recursive) {
         // is already a string OR has to be stringified
         return String(obj);
     }
@@ -172,7 +178,7 @@ export function stringify(obj: any, params: { space?: string; decimal?: number; 
         let res = '';
         for (const value of obj) {
             res += (res ? ',' : '[') + space;
-            res += stringify(value, Object.assign(params, { recursive: params.recursive - 1 }));
+            res += stringify(value, Object.assign({ ...params }, { recursive: params.recursive - 1 }));
         }
         return (res += space + ']');
     }
@@ -181,9 +187,12 @@ export function stringify(obj: any, params: { space?: string; decimal?: number; 
         return _decoder.decode(obj);
     }
     let res = '';
+    if (params.noBin) {
+        return '[' + obj.byteLength + '#bytes]';
+    }
     for (const name in obj) {
         res += (res ? ',' : '{') + space + name + ':';
-        res += stringify(obj[name], Object.assign(params, { recursive: params.recursive - 1 }));
+        res += stringify(obj[name], Object.assign({ ...params }, { recursive: params.recursive - 1 }));
     }
     return (res += space + '}');
 }
@@ -207,4 +216,39 @@ export function safePromise<T>(timeout: number, promise: Promise<T>) {
         promise instanceof Promise ? promise : new Promise(promise),
         new Promise((resolve, reject) => (timer = setTimeout(() => reject('timed out in ' + timeout + 'ms'), timeout)))
     ]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Wait in milliseconds, requires a call with await keyword!
+ */
+export function sleep(ms: number) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
+}
+
+/**
+ * fetch help method with few usefull fix:
+ * - throw an string exception if response code is not 200 with the text of the response or uses statusText
+ */
+export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const response = await self.fetch(input, init);
+    if (response.status >= 300) {
+        if (response.body) {
+            throw (await response.text()) || response.statusText;
+        }
+        throw response.statusText;
+    }
+    return response;
+}
+
+/**
+ * Extension parser
+ * @param path path to parse
+ * @returns the extension
+ */
+export function parseExtension(path: string): string {
+    const dot = path.lastIndexOf('.');
+    const ext = dot >= 0 && dot > path.lastIndexOf('/') ? path.substring(dot) : '';
+    return ext;
 }

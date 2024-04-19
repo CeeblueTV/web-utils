@@ -3,10 +3,11 @@
  * This file is part of https://github.com/CeeblueTV/web-utils which is released under GNU Affero General Public License.
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
-
 /**
  * BinaryReader allows to read binary data
  */
+const _decoder = new TextDecoder();
+
 export class BinaryReader {
     private _data: Uint8Array;
     private _size: number;
@@ -38,7 +39,7 @@ export class BinaryReader {
         return this._position;
     }
     reset(position = 0) {
-        this._position = position > this._size ? this._size : position;
+        this._position = Math.max(0, position > this._size ? this._size : position);
     }
 
     shrink(available: number): number {
@@ -55,7 +56,7 @@ export class BinaryReader {
         if (count > rest) {
             count = rest;
         }
-        this._position += count;
+        this._position = Math.max(0, this._position + count);
         return count;
     }
 
@@ -73,6 +74,12 @@ export class BinaryReader {
     read32(): number {
         return this.next(4) === 4 ? this._view.getUint32(this._position - 4) : 0;
     }
+    read64(): number {
+        if (this.next(8) !== 8) {
+            return 0;
+        }
+        return this._view.getUint32(this._position - 8) * 4294967296 + this._view.getUint32(this._position - 4);
+    }
     readFloat(): number {
         return this.next(4) === 4 ? this._view.getFloat32(this._position - 4) : 0;
     }
@@ -80,46 +87,45 @@ export class BinaryReader {
         return this.next(8) === 8 ? this._view.getFloat64(this._position - 8) : 0;
     }
     read7Bit(bytes = 5): number {
-        if (bytes > 5) {
-            throw Error("BinaryReader in JS can't decode more than 32 usefull bits");
-        }
-        if (!(bytes > 0)) {
-            // negation to catch NaN value
-            throw Error('Have to indicate a positive number of bytes to decode');
-        }
-        let result = 0;
-        let byte;
-        do {
-            byte = this.read8();
-            if (!--bytes) {
-                return ((result << 8) | byte) >>> 0; // Use all 8 bits from the 5th byte
+        let result: number = 0;
+        let factor: number = 1;
+        while (this.available()) {
+            const byte = this.read8();
+            result += (byte & 0x7f) * factor;
+            if (!(byte & 0x80)) {
+                break;
             }
-            result = (result << 7) | (byte & 0x7f);
-        } while (byte & 0x80);
+            factor *= 128;
+        }
         return result;
     }
     readString(): string {
-        return String.fromCharCode(...this.read(this.read7Bit()));
+        let i = this._position;
+        while (i < this._size && this._data[i]) {
+            ++i;
+        }
+        const result = this.read(i - this._position);
+        this.next(); // skip the 0 termination
+        return _decoder.decode(result);
     }
 
     readHex(size: number): string {
         let hex = '';
-        while (size--) {
+        while (size-- > 0) {
             hex += ('0' + this.read8().toString(16)).slice(-2);
         }
         return hex;
     }
 
     /**
-     * Read bytes, to convert bytes to string use String.fromCharCode(...reader.read(size))
+     * Read bytes, to convert bytes to string use String.fromCharCode(...reader.read(size)) or Util.stringify
      * @param {UInt32} size
      */
     read(size = this.available()): Uint8Array {
         if (this.available() < size) {
             return new Uint8Array(size); // default value = empty bytearray!
         }
-        const value = this._data.subarray(this._position, this._position + size);
-        this._position += size;
-        return value;
+        const pos = this._position;
+        return this._data.subarray(pos, Math.max(pos, (this._position += size)));
     }
 }

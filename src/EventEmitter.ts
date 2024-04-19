@@ -64,20 +64,19 @@ export class EventEmitter {
                     const events = new Set<Function>();
                     this._events.set(name.substring(2).toLowerCase(), events);
                     let defaultEvent = proto[name];
+                    const raise = (...args: unknown[]) => {
+                        // Call default event if not null (can happen in JS usage)
+                        if (defaultEvent) {
+                            defaultEvent.call(this, ...args);
+                        }
+                        // Call subscribers
+                        for (const event of events) {
+                            event(...args);
+                        }
+                    };
                     Object.defineProperties(this, {
                         [name]: {
-                            get:
-                                () =>
-                                (...args: unknown[]) => {
-                                    // Call default event if not null (can happen in JS usage)
-                                    if (defaultEvent) {
-                                        defaultEvent.call(this, ...args);
-                                    }
-                                    // Call subscribers
-                                    for (const event of events) {
-                                        event(...args);
-                                    }
-                                },
+                            get: () => raise,
                             set: (value: Function | undefined) => {
                                 // Assign a default behavior!
                                 defaultEvent = value;
@@ -103,9 +102,7 @@ export class EventEmitter {
         const events = this._event(name);
         events.add(event);
         if (abort) {
-            abort.signal.addEventListener('abort', () => {
-                events.delete(event);
-            });
+            abort.signal.addEventListener('abort', () => events.delete(event), { once: true });
         }
     }
 
@@ -120,14 +117,12 @@ export class EventEmitter {
             throw Error('event to subscribe cannot be null');
         }
         const events = this._event(name);
-        events.add(() => {
+        events.add((...args: unknown[]) => {
             events.delete(event); // delete from events
-            event(); // execute event
+            event(...args); // execute event
         });
         if (abort) {
-            abort.signal.addEventListener('abort', () => {
-                events.delete(event);
-            });
+            abort.signal.addEventListener('abort', () => events.delete(event), { once: true });
         }
     }
 
