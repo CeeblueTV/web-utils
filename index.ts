@@ -7,8 +7,10 @@
 export { BinaryReader } from './src/BinaryReader';
 export { BinaryWriter } from './src/BinaryWriter';
 export { BitReader } from './src/BitReader';
+export { ByteRate } from './src/ByteRate';
 export * as Connect from './src/Connect';
 export { EventEmitter } from './src/EventEmitter';
+export { FixMap } from './src/FixMap';
 export { ILog } from './src/ILog';
 export { NetAddress } from './src/NetAddress';
 export { Numbers } from './src/Numbers';
