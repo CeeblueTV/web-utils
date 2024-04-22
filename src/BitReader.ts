@@ -71,17 +71,20 @@ export class BitReader {
     read32(): number {
         return this.read(32);
     }
-}
 
-export function readExpGolomb(reader: BitReader): number {
-    let i = 0;
-    while (reader.available() && !reader.read()) {
-        ++i;
+    readExpGolomb(): number {
+        let i = 0;
+        while (!this.read()) {
+            if (!this.available()) {
+                return 0;
+            }
+            ++i;
+        }
+        const result = this.read(i);
+        if (i > 15) {
+            console.warn('Exponential-Golomb code exceeding unsigned 16 bits');
+            return 0;
+        }
+        return result + (1 << i) - 1;
     }
-    const result = reader.read(i);
-    if (i > 15) {
-        console.warn('Exponential-Golomb code exceeding unsigned 16 bits');
-        return 0;
-    }
-    return result + (1 << i) - 1;
 }
