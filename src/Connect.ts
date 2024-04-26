@@ -11,10 +11,10 @@ import * as Util from './Util';
  */
 export type Params = {
     /**
-     * Host to connect. Can include port, and accept also an url format with port and path,
-     * it can help to force a path OR try to give a protocol preference
+     * endPoint to connect. Can be only a host(:port) but accept also a full url of connection,
+     * it can help to force a path or indicate a protocol preference
      */
-    host: string;
+    endPoint: string;
     /**
      * The name of the stream to join
      */
@@ -56,7 +56,7 @@ export enum Type {
  * @returns The URL of connection
  */
 export function buildURL(type: Type, params: Params, protocol: string = 'wss'): URL {
-    const url = new URL(NetAddress.fixProtocol(protocol, params.host));
+    const url = new URL(NetAddress.fixProtocol(protocol, params.endPoint));
 
     if (url.pathname.length <= 1) {
         // build ceeblue path!

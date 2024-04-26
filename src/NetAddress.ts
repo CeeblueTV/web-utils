@@ -44,7 +44,7 @@ export class NetAddress {
                     protocol = protocol.slice(0, -1); // Remove SSL
                 }
             }
-            // Build host!
+            // Build address!
             address = address.substring(found + 3);
         }
         return protocol + '://' + address;
