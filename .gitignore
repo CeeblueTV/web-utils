@@ -3,6 +3,7 @@ dist/
 docs/**/*.html
 docs/.nojekyll
 docs/assets
+test*
 
 # OS
 .DS_Store

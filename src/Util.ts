@@ -165,6 +165,13 @@ export function stringify(
     if (obj.toFixed) {
         return obj.toFixed(Number(params.decimal) || 0);
     }
+    if (obj.byteLength != null && obj?.[Symbol.iterator]) {
+        // Binary!
+        if (!params.noBin) {
+            return _decoder.decode(obj);
+        }
+        return '[' + obj.byteLength + '#bytes]';
+    }
     // boolean or string type or stop recursivity
     if (typeof obj === 'boolean' || obj.substring || !params.recursive) {
         // is already a string OR has to be stringified
@@ -182,14 +189,7 @@ export function stringify(
         }
         return (res += space + ']');
     }
-    if (obj.byteLength != null && obj?.[Symbol.iterator]) {
-        // Binary!
-        return _decoder.decode(obj);
-    }
     let res = '';
-    if (params.noBin) {
-        return '[' + obj.byteLength + '#bytes]';
-    }
     for (const name in obj) {
         res += (res ? ',' : '{') + space + name + ':';
         res += stringify(obj[name], Object.assign({ ...params }, { recursive: params.recursive - 1 }));
