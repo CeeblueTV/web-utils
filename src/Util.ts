@@ -142,7 +142,7 @@ export function objectEntries(value: any): [string, any][] {
  * @param obj Any objects, strings, exceptions, errors, or number
  * @param params.space `''`, allows to configure space in the string representation
  * @param params.decimal `2`, allows to choose the number of decimal to display in the string representation
- * @param params.recursive `false`, allows to serialize recursively every object value, beware if a value refers to a already parsed value an infinite loop will occur
+ * @param params.recursion `1`, recursion depth to stringify recursively every object value until this depth, beware if a value refers to a already parsed value an infinite loop will occur
  * @param params.noBin `false`, when set skip binary encoding and write inplace a bin-length information
  * @returns the final string representation
  */
@@ -150,9 +150,9 @@ export function objectEntries(value: any): [string, any][] {
 // Write, Edit and Run your Javascript code using JS Online Compiler
 export function stringify(
     obj: any,
-    params: { space?: string; decimal?: number; recursive?: number; noBin?: boolean } = {}
+    params: { space?: string; decimal?: number; recursion?: number; noBin?: boolean } = {}
 ): string {
-    params = Object.assign({ space: ' ', decimal: 2, recursive: 1, noBin: false }, params);
+    params = Object.assign({ space: ' ', decimal: 2, recursion: 1, noBin: false }, params);
     if (obj == null) {
         return String(obj);
     }
@@ -173,7 +173,7 @@ export function stringify(
         return '[' + obj.byteLength + '#bytes]';
     }
     // boolean or string type or stop recursivity
-    if (typeof obj === 'boolean' || obj.substring || !params.recursive) {
+    if (typeof obj === 'boolean' || obj.substring || !params.recursion) {
         // is already a string OR has to be stringified
         return String(obj);
     }
@@ -185,14 +185,14 @@ export function stringify(
         let res = '';
         for (const value of obj) {
             res += (res ? ',' : '[') + space;
-            res += stringify(value, Object.assign({ ...params }, { recursive: params.recursive - 1 }));
+            res += stringify(value, Object.assign({ ...params }, { recursion: params.recursion - 1 }));
         }
         return (res += space + ']');
     }
     let res = '';
     for (const name in obj) {
         res += (res ? ',' : '{') + space + name + ':';
-        res += stringify(obj[name], Object.assign({ ...params }, { recursive: params.recursive - 1 }));
+        res += stringify(obj[name], Object.assign({ ...params }, { recursion: params.recursion - 1 }));
     }
     return (res += space + '}');
 }
