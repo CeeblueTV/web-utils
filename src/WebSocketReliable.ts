@@ -176,7 +176,7 @@ export class WebSocketReliable extends EventEmitter {
                 this.close(url.toString() + ' shutdown');
             } else {
                 // abnormal disconnection from server
-                this.close(url.toString() + 'disconnection, ' + String(e.reason || e.code));
+                this.close(url.toString() + ' disconnection, ' + String(e.reason || e.code));
             }
         };
         // Wrap send method to queue messages until connection is established.
