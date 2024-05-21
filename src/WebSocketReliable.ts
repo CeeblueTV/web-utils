@@ -168,13 +168,15 @@ export class WebSocketReliable extends EventEmitter {
         ws.onclose = (e: CloseEvent) => {
             if (!this._opened) {
                 // close during connection
-                this.close(url.toString() + ' connection failed (' + String(e.reason || e.code) + ')');
+                // the caller can differentiate this case of one server shutdown by looking if onOpen was op
+                this.close(url.toString() + ' connection failed, ' + String(e.reason || e.code));
             } else if (e.code === 1000 || e.code === 1005) {
-                // normal disconnection from server (no error code)
+                // normal disconnection from server, no error to indicate that a reconnection is possible!
+                // the caller can differentiate this case of one explicit websocket.close() call in the encpasulating class
                 this.close(url.toString() + ' shutdown');
             } else {
-                // disconnection from server
-                this.close(url.toString() + ' disconnection (' + String(e.reason || e.code) + ')');
+                // abnormal disconnection from server
+                this.close(url.toString() + ' disconnection, ' + String(e.reason || e.code));
             }
         };
         // Wrap send method to queue messages until connection is established.
@@ -193,7 +195,7 @@ export class WebSocketReliable extends EventEmitter {
      * @returns this
      */
     send(message: string | ArrayBuffer | ArrayBufferView, queueing: boolean = false) {
-        if (!this._ws) {
+        if (this._closed) {
             throw Error('Open socket before to send data');
         }
         if (queueing || !this._opened) {
@@ -230,10 +232,13 @@ export class WebSocketReliable extends EventEmitter {
         this._ws.onopen = this._ws.onclose = this._ws.onmessage = null; // otherwise can receive message AFTER close!
         this._ws.close(); // Don't set to undefined to keep this._ws properties valid!
         // release resources!
-        this._opened = false;
+
         this._queueing.length = 0;
         this._queueingBytes = 0;
         this.onClose(error);
+        // Reset _opened in last to allow to differenciate in onClose an error while connecting OR while connected
+        // Is welcome to attempt a reconnection when no error OR when error on connection!
+        this._opened = false;
     }
 
     private _send(message: string | ArrayBuffer | ArrayBufferView) {
