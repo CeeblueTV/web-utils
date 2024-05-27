@@ -38,7 +38,7 @@ export type Params = {
  */
 export enum Type {
     HESP = 'HESP',
-    WEBRTS = 'WebRTS',
+    WRTS = 'WebRTS',
     WEBRTC = 'WebRTC',
     META = 'Meta',
     DATA = 'Data'
@@ -67,8 +67,8 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
             case Type.WEBRTC:
                 url.pathname = '/webrtc/' + params.streamName;
                 break;
-            case Type.WEBRTS:
-                url.pathname = '/webrts/' + params.streamName;
+            case Type.WRTS:
+                url.pathname = '/wrts/' + params.streamName;
                 break;
             case Type.META:
                 url.pathname = '/json_' + params.streamName + '.js';
