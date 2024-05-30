@@ -228,6 +228,35 @@ export function sleep(ms: number) {
 }
 
 /**
+ * Test equality between two value whatever their type, array included
+ */
+export function equal(a: any, b: any) {
+    if (Object(a) !== a) {
+        if (Object(b) === b) {
+            return false;
+        }
+        // both primitive (null and undefined included)
+        return a === b;
+    }
+    // complexe object
+    if (a[Symbol.iterator]) {
+        if (!b[Symbol.iterator]) {
+            return false;
+        }
+        if (a.length !== b.length) {
+            return false;
+        }
+        for (let i = 0; i !== a.length; ++i) {
+            if (a[i] !== b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return a === b;
+}
+
+/**
  * fetch help method with few usefull fix:
  * - throw an string exception if response code is not 200 with the text of the response or uses statusText
  */
