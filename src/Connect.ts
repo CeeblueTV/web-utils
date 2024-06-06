@@ -58,6 +58,10 @@ export enum Type {
 export function buildURL(type: Type, params: Params, protocol: string = 'wss'): URL {
     const url = new URL(NetAddress.fixProtocol(protocol, params.endPoint));
 
+    // Remove possible extension of streamName put sometimes to decide format when multiple choices are possible like with WRTS
+    const ext = Util.parseExtension(params.streamName);
+    params.streamName = params.streamName.substring(0, params.streamName.length - ext.length);
+
     if (url.pathname.length <= 1) {
         // build ceeblue path!
         switch (type) {
@@ -68,7 +72,7 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
                 url.pathname = '/webrtc/' + params.streamName;
                 break;
             case Type.WRTS:
-                url.pathname = '/wrts/' + params.streamName;
+                url.pathname = '/wrts/' + params.streamName + ext;
                 break;
             case Type.META:
                 url.pathname = '/json_' + params.streamName + '.js';
@@ -87,7 +91,5 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
     for (const key in params.query) {
         url.searchParams.set(key, params.query[key]);
     }
-    // Remove possible extension of streamName
-    params.streamName.substring(0, params.streamName.length - Util.parseExtension(params.streamName).length);
     return url;
 }
