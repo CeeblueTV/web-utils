@@ -3,8 +3,8 @@
  * This file is part of https://github.com/CeeblueTV/web-utils which is released under GNU Affero General Public License.
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
-import { NetAddress } from './NetAddress';
 import * as Util from './Util';
+import { NetAddress } from './NetAddress';
 
 /**
  * Parameters of connections
@@ -28,6 +28,11 @@ export type Params = {
      */
     iceServer?: RTCIceServer; // Authentication value
     /**
+     * Optional media extension (mp4, flv, ts, rts), usefull for protocol like WebRTS which supports different container type.
+     * When not set, it's also an output parameter to indicate what is the media type selected
+     */
+    mediaExt?: string;
+    /**
      * Optional query to add into the generated url of connection
      */
     query?: Record<string, string>;
@@ -49,6 +54,56 @@ export enum Type {
  */
 
 /**
+ * Defines the {@link Params.mediaExt} based on the type of parameters and its endpoint.
+ * This method always assigns a value to params.mediaExt, defaulting to an empty string if indeterminable,
+ * allowing detection of whether the function has been applied to the parameters.
+ * @param type The type of parameters to define.
+ * @param params The parameters for which the media extension is to be defined
+ */
+export function defineMediaExt(type: Type, params: Params) {
+    // Fix mediaExt in removing the possible '.' prefix
+    if (params.mediaExt) {
+        params.mediaExt = Util.trimStart(params.mediaExt, '.');
+    }
+    // Compute appropriate mediaExt out parameter
+    switch (type) {
+        case Type.HESP:
+            params.mediaExt = 'mp4';
+            break;
+        case Type.WEBRTC:
+            params.mediaExt = 'rtp';
+            break;
+        case Type.WRTS: {
+            try {
+                const url = new URL(params.endPoint);
+                const ext = Util.getExtension(Util.getFile(url.pathname));
+                // set extension just if not json, json means a manifest file endPoint
+                if (ext && ext !== 'json') {
+                    params.mediaExt = ext;
+                }
+            } catch (_) {
+                // not an URL, it's only a host => keep mediaExt unchanged to build the URL
+            }
+            if (!params.mediaExt) {
+                // set to its default rts value => always set for WRTS!
+                params.mediaExt = 'rts';
+            }
+            break;
+        }
+        case Type.META:
+            params.mediaExt = 'js';
+            break;
+        case Type.DATA:
+            params.mediaExt = 'json';
+            break;
+        default:
+            params.mediaExt = ''; // set always a value to know that the parameters have been fixed
+            console.warn('Unknown params type ' + type);
+            break;
+    }
+}
+
+/**
  * Build an URL from {@link Type | type} and {@link Params | params}
  * @param type Type of the connection wanted
  * @param params Connection parameters
@@ -56,11 +111,9 @@ export enum Type {
  * @returns The URL of connection
  */
 export function buildURL(type: Type, params: Params, protocol: string = 'wss'): URL {
-    const url = new URL(NetAddress.fixProtocol(protocol, params.endPoint));
+    defineMediaExt(type, params);
 
-    // Remove possible extension of streamName put sometimes to decide format when multiple choices are possible like with WRTS
-    const ext = Util.parseExtension(params.streamName);
-    params.streamName = params.streamName.substring(0, params.streamName.length - ext.length);
+    const url = new URL(NetAddress.fixProtocol(protocol, params.endPoint));
 
     if (url.pathname.length <= 1) {
         // build ceeblue path!
@@ -72,7 +125,7 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
                 url.pathname = '/webrtc/' + params.streamName;
                 break;
             case Type.WRTS:
-                url.pathname = '/wrts/' + params.streamName + ext;
+                url.pathname = '/wrts/' + params.streamName;
                 break;
             case Type.META:
                 url.pathname = '/json_' + params.streamName + '.js';
