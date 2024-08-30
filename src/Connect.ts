@@ -61,16 +61,11 @@ export enum Type {
  * @param params The parameters for which the media extension is to be defined
  */
 export function defineMediaExt(type: Type, params: Params) {
-    // Fix mediaExt
-    /// remove all the possible '.' prefix
+    // Fix mediaExt in removing the possible '.' prefix
     if (params.mediaExt) {
-        let i = 0;
-        while (params.mediaExt.charAt(i) === '.') {
-            ++i;
-        }
-        params.mediaExt = params.mediaExt.substring(i);
+        params.mediaExt = Util.trimStart(params.mediaExt, '.');
     }
-    /// Set mediaExt out parameter if not set!
+    // Compute appropriate mediaExt out parameter
     switch (type) {
         case Type.HESP:
             params.mediaExt = 'mp4';

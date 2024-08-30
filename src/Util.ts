@@ -290,3 +290,60 @@ export function getExtension(path: string): string {
 export function getFile(path: string): string {
     return path.substring(path.lastIndexOf('/') + 1);
 }
+
+function codesFromString(value: string): Array<number> {
+    const codes = [];
+    for (let i = 0; i < value.length; ++i) {
+        codes.push(value.charCodeAt(i));
+    }
+    return codes;
+}
+
+/**
+ * String Trim function with customizable chars
+ * @param value string to trim
+ * @param chars chars to use to trim
+ * @returns string trimmed
+ */
+export function trim(value: string, chars: string = ' '): string {
+    const codes = codesFromString(chars);
+    let start = 0;
+    while (start < value.length && codes.includes(value.charCodeAt(start))) {
+        ++start;
+    }
+    let end = value.length;
+    while (end > 0 && codes.includes(value.charCodeAt(end - 1))) {
+        --end;
+    }
+    return value.substring(start, end);
+}
+
+/**
+ * String Trim Start function with customizable chars
+ * @param value string to trim start
+ * @param chars chars to use to trim start
+ * @returns string trimmed
+ */
+export function trimStart(value: string, chars: string = ' '): string {
+    const codes = codesFromString(chars);
+    let i = 0;
+    while (i < value.length && codes.includes(value.charCodeAt(i))) {
+        ++i;
+    }
+    return value.substring(i);
+}
+
+/**
+ * String Trim End function with customizable chars
+ * @param value string to trim end
+ * @param chars chars to use to trim end
+ * @returns string trimmed
+ */
+export function trimEnd(value: string, chars: string = ' '): string {
+    const codes = codesFromString(chars);
+    let i = value.length;
+    while (i > 0 && codes.includes(value.charCodeAt(i - 1))) {
+        --i;
+    }
+    return value.substring(0, i);
+}
