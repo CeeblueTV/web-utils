@@ -20,6 +20,7 @@ export * as Util from './src/Util';
 export { WebSocketReliable } from './src/WebSocketReliable';
 export { ILogger } from './src/loggers/ILogger';
 export { NullLogger } from './src/loggers/NullLogger';
+export { PrefixLogger } from './src/loggers/PrefixLogger';
 
 const __lib__version__ = '?'; // will be replaced on building by project version
 
