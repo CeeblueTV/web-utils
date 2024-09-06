@@ -9,7 +9,7 @@
  *
  * @interface
  */
-export interface Logger {
+export interface ILogger {
     /**
      * Logs a message and optional parameters.
      *

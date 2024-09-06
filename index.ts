@@ -18,8 +18,8 @@ export { Queue } from './src//Queue';
 export { SDP } from './src/SDP';
 export * as Util from './src/Util';
 export { WebSocketReliable } from './src/WebSocketReliable';
-export { Logger } from './src/Logger';
-export { StubLogger } from './src/StubLogger';
+export { ILogger } from './src/loggers/ILogger';
+export { NullLogger } from './src/loggers/NullLogger';
 
 const __lib__version__ = '?'; // will be replaced on building by project version
 
