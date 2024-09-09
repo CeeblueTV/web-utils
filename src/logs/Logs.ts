@@ -7,7 +7,7 @@
 import { EventEmitter } from '../EventEmitter';
 import { ILogger } from './ILogger';
 
-class Logs extends EventEmitter {
+export class Logs extends EventEmitter {
     /**
      * Raises on any log error
      * @param error

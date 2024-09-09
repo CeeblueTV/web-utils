@@ -19,9 +19,10 @@ export * as Util from './src/Util';
 export { WebSocketReliable } from './src/WebSocketReliable';
 
 export { ILog } from './src/logs/ILog';
-export { logs } from './src/logs/Logs';
 export { ILogger } from './src/logs/ILogger';
-export { Loggable, log } from './src/logs/Loggable';
+export { Logs, logs } from './src/logs/Logs';
+export { Log, log } from './src/logs/Log';
+export { Loggable } from './src/logs/Loggable';
 
 const __lib__version__ = '?'; // will be replaced on building by project version
 
