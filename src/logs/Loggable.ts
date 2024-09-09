@@ -6,7 +6,7 @@
 import { EventEmitter } from '../EventEmitter';
 import { ILog } from './ILog';
 import { Log } from './Log';
-import { ILogger } from './ILogger';
+import { logs } from './Logs';
 
 export class Loggable extends EventEmitter {
     /**
@@ -16,17 +16,13 @@ export class Loggable extends EventEmitter {
      */
     onError(error: string) {}
     /**
-     * Attach a custom logger for this loggable object
-     */
-    logger?: ILogger;
-    /**
      * Start a log
      * @param args
      * @returns a ILog object with the levels of log to call
      */
     log(...args: unknown[]): ILog {
-        const log = new Log(this.logger, ...args);
-        log.onError = this.onError;
+        const log = new Log(logs.logger, ...args);
+        log.onError = (error: string) => this.onError(error);
         return log;
     }
 }

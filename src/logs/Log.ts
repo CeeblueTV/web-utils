@@ -14,10 +14,10 @@ setInterval(() => {
 }, 10000);
 
 export class Log implements ILog {
+    onError(error: string) {}
+
     get error() {
-        if (this._onError) {
-            this._onError((logs.lastError = this._args.join(' ')));
-        }
+        this.onError((logs.lastError = this._args.join(' ')));
         return this._bind('error');
     }
     get warn() {
@@ -30,15 +30,13 @@ export class Log implements ILog {
         return this._bind('debug');
     }
 
-    logger?: ILogger;
-    onError?: Function;
-
+    private _logger: ILogger;
     private _args: unknown[];
     private _done?: boolean;
-    private _onError?: Function;
-    constructor(logger: ILogger | undefined, ...args: unknown[]) {
+
+    constructor(logger: ILogger, ...args: unknown[]) {
         this._args = args;
-        this.logger = logger;
+        this._logger = logger;
         ++logging;
     }
 
@@ -47,8 +45,7 @@ export class Log implements ILog {
             this._done = true;
             --logging;
         }
-        const logger = this.logger ?? logs.logger;
-        return logger[type].bind(logger, ...this._args);
+        return this._logger[type].bind(this._logger, ...this._args);
     }
 }
 
