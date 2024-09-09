@@ -54,8 +54,9 @@ export class EventEmitter {
     constructor() {
         this._events = new Map();
         // Fill events with events as defined!
-        let proto = Object.getPrototypeOf(this);
-        while (proto && proto !== Object.prototype) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let proto = this as any;
+        while ((proto = Object.getPrototypeOf(proto)) && proto !== EventEmitter.prototype) {
             for (const name of Object.getOwnPropertyNames(proto)) {
                 if (name.length < 3 || !name.startsWith('on')) {
                     continue;
@@ -64,19 +65,20 @@ export class EventEmitter {
                     const events = new Set<Function>();
                     this._events.set(name.substring(2).toLowerCase(), events);
                     let defaultEvent = proto[name];
-                    const raise = (...args: unknown[]) => {
-                        // Call default event if not null (can happen in JS usage)
-                        if (defaultEvent) {
-                            defaultEvent.call(this, ...args);
-                        }
-                        // Call subscribers
-                        for (const event of events) {
-                            event(...args);
-                        }
-                    };
                     Object.defineProperties(this, {
                         [name]: {
-                            get: () => raise,
+                            get:
+                                () =>
+                                (...args: unknown[]) => {
+                                    // Call default event if not null (can happen in JS usage)
+                                    if (defaultEvent) {
+                                        defaultEvent.call(this, ...args);
+                                    }
+                                    // Call subscribers
+                                    for (const event of events) {
+                                        event(...args);
+                                    }
+                                },
                             set: (value: Function | undefined) => {
                                 // Assign a default behavior!
                                 defaultEvent = value;
@@ -85,7 +87,6 @@ export class EventEmitter {
                     });
                 }
             }
-            proto = Object.getPrototypeOf(proto);
         }
     }
 
