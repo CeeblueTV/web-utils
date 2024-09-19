@@ -60,13 +60,11 @@ export class Log {
         // call the local onLog
         if (this._onLog) {
             this._onLog(type, this._args);
-            if (!this._args.length) {
-                // intercepted
-                return Util.EMPTY_FUNCTION;
-            }
         }
         // call the global onLog
-        log?.on(type, this._args);
+        if (this._args.length && log.on) {
+            log.on(type, this._args);
+        }
         // if not intercepted display the log
         return this._args.length ? console[type].bind(console, ...this._args) : Util.EMPTY_FUNCTION;
     }
@@ -81,7 +79,7 @@ export interface ILog {
      */
     (...args: unknown[]): Log;
     /**
-     * Subscribe to the log
+     * Intercept or redefine any log
      * @param type log level
      * @param args args
      * @returns
