@@ -16,7 +16,7 @@ export { Numbers } from './src/Numbers';
 export { Queue } from './src//Queue';
 export { SDP } from './src/SDP';
 export * as Util from './src/Util';
-export { WebSocketReliable } from './src/WebSocketReliable';
+export { WebSocketReliable, WebSocketReliableError } from './src/WebSocketReliable';
 
 export { LogType, ILog, Log, Loggable, log } from './src/Log';
 

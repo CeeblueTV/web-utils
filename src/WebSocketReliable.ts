@@ -7,6 +7,8 @@
 import { ByteRate } from './ByteRate';
 import { EventEmitter } from './EventEmitter';
 
+export type WebSocketReliableError = 'Socket disconnection' | 'Server shutdown' | 'Connection failed';
+
 /**
  * The WebSocketReliable class extends WebSocket to bring up the following improvements:
  * - Fix all possible unintentional closing ways to get always a related error message, {@link onClose | onClose(error?) event}
@@ -48,12 +50,9 @@ export class WebSocketReliable extends EventEmitter {
     /**
      * @event `close` fired on websocket close
      * @param error error description on an improper closure
+     * @param detail detail of the error
      */
-    onClose(error?: string) {
-        if (error) {
-            console.error(error);
-        }
-    }
+    onClose(error?: WebSocketReliableError, detail?: Record<string, unknown>) {}
 
     /**
      * binaryType, fix binary type to arrayBuffer
@@ -169,14 +168,14 @@ export class WebSocketReliable extends EventEmitter {
             if (!this._opened) {
                 // close during connection
                 // the caller can differentiate this case of one server shutdown by looking if onOpen was op
-                this.close(url.toString() + ' connection failed, ' + String(e.reason || e.code));
+                this.close('Connection failed', { url: url.toString(), detail: String(e.reason || e.code) });
             } else if (e.code === 1000 || e.code === 1005) {
                 // normal disconnection from server, no error to indicate that a reconnection is possible!
                 // the caller can differentiate this case of one explicit websocket.close() call in the encpasulating class
-                this.close(url.toString() + ' shutdown');
+                this.close('Server shutdown', { url: url.toString() });
             } else {
                 // abnormal disconnection from server
-                this.close(url.toString() + ' disconnection, ' + String(e.reason || e.code));
+                this.close('Socket disconnection', { url: url.toString(), detail: String(e.reason || e.code) });
             }
         };
         // Wrap send method to queue messages until connection is established.
@@ -223,8 +222,9 @@ export class WebSocketReliable extends EventEmitter {
     /**
      * Close websocket
      * @param error the error reason if is not a proper close
+     * @param detail detail of the error
      */
-    close(error?: string) {
+    close(error?: WebSocketReliableError, detail?: Record<string, unknown>) {
         if (!this._ws || this._closed) {
             return;
         }
@@ -235,7 +235,10 @@ export class WebSocketReliable extends EventEmitter {
 
         this._queueing.length = 0;
         this._queueingBytes = 0;
-        this.onClose(error);
+        if (error) {
+            this.log(error, detail).error();
+        }
+        this.onClose(error, detail);
         // Reset _opened in last to allow to differenciate in onClose an error while connecting OR while connected
         // Is welcome to attempt a reconnection when no error OR when error on connection!
         this._opened = false;
