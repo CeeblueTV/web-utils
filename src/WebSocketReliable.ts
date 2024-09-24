@@ -66,7 +66,13 @@ export class WebSocketReliable extends EventEmitter {
      * @param error error description on an improper closure
      * @event
      */
-    onClose(error?: WebSocketReliableError) {}
+    onClose(error?: WebSocketReliableError) {
+        if (error) {
+            this.log('onClose', error).error();
+        } else {
+            this.log('onClose').info();
+        }
+    }
 
     /**
      * binaryType, fix binary type to arrayBuffer
@@ -260,9 +266,6 @@ export class WebSocketReliable extends EventEmitter {
 
         this._queueing.length = 0;
         this._queueingBytes = 0;
-        if (error) {
-            this.log(error).error();
-        }
         this.onClose(error);
         // Reset _opened in last to allow to differenciate in onClose an error while connecting OR while connected
         this._opened = false;
