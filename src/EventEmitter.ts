@@ -4,6 +4,8 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 
+import { Loggable } from './Log';
+
 /**
  * A advanced EventEmitter which allows to declare event as natural function in the inheriting children class,
  * function must start by `on` prefix to be recognized as an event.
@@ -45,13 +47,14 @@
  * controller.abort();
  * logger.test(); // displays nothing
  */
-export class EventEmitter {
+export class EventEmitter extends Loggable {
     private _events: Map<string, Set<Function>>;
 
     /**
      * Build our EventEmitter, usually call from children class
      */
     constructor() {
+        super();
         this._events = new Map();
         // Fill events with events as defined!
         let proto = Object.getPrototypeOf(this);
