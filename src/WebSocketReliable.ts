@@ -47,23 +47,32 @@ export type WebSocketReliableError =
  */
 export class WebSocketReliable extends EventEmitter {
     /**
-     * @event `open` fired when socket is connected
+     * Fired when socket is connected
+     * @event
      */
     onOpen() {}
 
     /**
-     * @event `message` fired on message reception
+     * Fired on message reception
      * @param message can be binary or string.
      * If you subscribe to the event with message as string type (and not union),
      * it means that you know that all your messages are distributed in a string format
+     * @event
      */
     onMessage(message: ArrayBuffer | string) {}
 
     /**
-     * @event `close` fired on websocket close
+     * Fired on websocket close
      * @param error error description on an improper closure
+     * @event
      */
-    onClose(error?: WebSocketReliableError) {}
+    onClose(error?: WebSocketReliableError) {
+        if (error) {
+            this.log('onClose', error).error();
+        } else {
+            this.log('onClose').info();
+        }
+    }
 
     /**
      * binaryType, fix binary type to arrayBuffer
@@ -245,7 +254,6 @@ export class WebSocketReliable extends EventEmitter {
     /**
      * Close websocket
      * @param error the error reason if is not a proper close
-     * @param detail detail of the error
      */
     close(error?: WebSocketReliableError) {
         if (!this._ws || this._closed) {
@@ -258,9 +266,6 @@ export class WebSocketReliable extends EventEmitter {
 
         this._queueing.length = 0;
         this._queueingBytes = 0;
-        if (error) {
-            this.log(error).error();
-        }
         this.onClose(error);
         // Reset _opened in last to allow to differenciate in onClose an error while connecting OR while connected
         this._opened = false;
