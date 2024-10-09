@@ -263,10 +263,11 @@ export function equal(a: any, b: any) {
 export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const response = await self.fetch(input, init);
     if (response.status >= 300) {
+        let error;
         if (response.body) {
-            throw (await response.text()) || response.statusText;
+            error = await response.text();
         }
-        throw response.statusText;
+        throw (error || response.statusText || response.status).toString();
     }
     return response;
 }
