@@ -292,6 +292,17 @@ export function getFile(path: string): string {
     return path.substring(path.lastIndexOf('/') + 1);
 }
 
+/**
+ * Get Base File part from path, without extension
+ * @param path path to parse
+ * @returns the base file name
+ */
+export function getBaseFile(path: string): string {
+    const dot = path.lastIndexOf('.');
+    const file = path.lastIndexOf('/') + 1;
+    return dot >= 0 && dot >= file ? path.substring(file, dot) : path.substring(file);
+}
+
 function codesFromString(value: string): Array<number> {
     const codes = [];
     for (let i = 0; i < value.length; ++i) {
