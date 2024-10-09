@@ -61,10 +61,6 @@ export enum Type {
  * @param params The parameters for which the media extension is to be defined
  */
 export function defineMediaExt(type: Type, params: Params) {
-    // Fix mediaExt in removing the possible '.' prefix
-    if (params.mediaExt) {
-        params.mediaExt = Util.trimStart(params.mediaExt, '.');
-    }
     // Compute appropriate mediaExt out parameter
     switch (type) {
         case Type.HESP:
@@ -78,7 +74,7 @@ export function defineMediaExt(type: Type, params: Params) {
                 const url = new URL(params.endPoint);
                 const ext = Util.getExtension(Util.getFile(url.pathname));
                 // set extension just if not json, json means a manifest file endPoint
-                if (ext && ext !== 'json') {
+                if (ext && ext.toLowerCase() !== '.json') {
                     params.mediaExt = ext;
                 }
             } catch (_) {
@@ -101,6 +97,8 @@ export function defineMediaExt(type: Type, params: Params) {
             console.warn('Unknown params type ' + type);
             break;
     }
+    // Fix mediaExt in removing the possible '.' prefix
+    Util.trimStart(params.mediaExt, '.');
 }
 
 /**
@@ -125,7 +123,7 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
                 url.pathname = '/webrtc/' + params.streamName;
                 break;
             case Type.WRTS:
-                url.pathname = '/wrts/' + params.streamName;
+                url.pathname = '/wrts/' + params.streamName + '.' + params.mediaExt;
                 break;
             case Type.META:
                 url.pathname = '/json_' + params.streamName + '.js';
