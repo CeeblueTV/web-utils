@@ -263,10 +263,11 @@ export function equal(a: any, b: any) {
 export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const response = await self.fetch(input, init);
     if (response.status >= 300) {
+        let error;
         if (response.body) {
-            throw (await response.text()) || response.statusText;
+            error = await response.text();
         }
-        throw response.statusText;
+        throw (error || response.statusText || response.status).toString();
     }
     return response;
 }
@@ -289,6 +290,17 @@ export function getExtension(path: string): string {
  */
 export function getFile(path: string): string {
     return path.substring(path.lastIndexOf('/') + 1);
+}
+
+/**
+ * Get Base File part from path, without extension
+ * @param path path to parse
+ * @returns the base file name
+ */
+export function getBaseFile(path: string): string {
+    const dot = path.lastIndexOf('.');
+    const file = path.lastIndexOf('/') + 1;
+    return dot >= 0 && dot >= file ? path.substring(file, dot) : path.substring(file);
 }
 
 function codesFromString(value: string): Array<number> {
