@@ -13,7 +13,7 @@ import * as Util from './Util';
  * - redirect logs: redirect logs to one other logger engine
  * - redefine logs: change log text like adding a prefix
  *
- * You have 4 {@link LogType} 'error', 'warn', 'info' and 'debug' like is managed by the browser
+ * You have 4 {@link LogType} 'error', 'warn', 'info', and 'debug', as commonly managed by browsers.
  *
  * @example
  * // Intercept and redirect all the logs to the console (default behavior)
