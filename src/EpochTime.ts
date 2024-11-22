@@ -57,16 +57,17 @@ export function decodeTimestamp(
 
     const data = context.getImageData(0, Math.round(i), lineWidth, 1).data;
     const pixels = new Uint32Array(data.buffer);
-    const blackThreshold = 0xffffff * tolerance;
-    const whiteThreshold = 0xffffff * (1 - tolerance);
+    const blackThreshold = 0xff * tolerance;
+    const whiteThreshold = 0xff * (1 - tolerance);
 
     while (i < pixels.length) {
         const pixel = pixels[Math.round(i)] & 0xffffff;
-        pixels[Math.round(i)] = pixel;
-        if (pixel < blackThreshold) {
+        // Extract luminance from RGB
+        const Y = 0.299 * ((pixel >> 16) & 0xff) + 0.587 * ((pixel >> 8) & 0xff) + 0.114 * (pixel & 0xff);
+        if (Y < blackThreshold) {
             // Black
             binaryTime += '1';
-        } else if (pixel > whiteThreshold) {
+        } else if (Y > whiteThreshold) {
             // White
             binaryTime += '0';
         } else {
