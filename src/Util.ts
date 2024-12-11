@@ -189,12 +189,15 @@ export function stringify(
         }
         return (res += space + ']');
     }
-    let res = '';
+    let res = '{';
     for (const name in obj) {
-        res += (res ? ',' : '{') + space + name + ':';
-        res += stringify(obj[name], Object.assign({ ...params }, { recursion: params.recursion - 1 }));
+        if (res.length > 1) {
+            res += ',';
+        }
+        res += space + name + ':';
+        res += stringify(obj[name], Object.assign({ ...params }, { recursion: params.recursion - 1 })) + space;
     }
-    return (res += space + '}');
+    return (res += '}');
 }
 
 /**
