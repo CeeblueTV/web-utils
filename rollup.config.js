@@ -31,6 +31,8 @@ export default args => {
         format = 'es';
         target = 'es6';
     }
+    const downlevelIteration = !(Number(target.substring(2)) > 5);
+
     // Determine the package version by using the 'version' environment variable (for CI/CD processes) or fallback to the version specified in the 'package.json' file.
     let version = process.env.version ?? process.env.npm_package_version;
     // Validate the version format
@@ -65,7 +67,7 @@ export default args => {
                     preventAssignment: true
                 }),
                 eslint(),
-                typescript({ target })
+                typescript({ target, downlevelIteration })
             ]
         },
         {
