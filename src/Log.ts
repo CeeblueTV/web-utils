@@ -92,8 +92,8 @@ setInterval(() => {
     console.assert(_logging === 0, _logging.toFixed(), 'calls to log was useless');
 }, 10000);
 
-const options = Util.options();
-const _defaulLevel = options.debug || options === '' ? LogLevel.DEBUG : LogLevel.INFO;
+const _defaulLevel =
+    typeof location !== 'undefined' && location.search.startsWith('?debug!') ? LogLevel.DEBUG : LogLevel.INFO;
 
 const _charLevels = new Array(128);
 _charLevels[101] = _charLevels[69] = 1; // error
