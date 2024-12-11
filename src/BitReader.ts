@@ -4,16 +4,19 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 
+import { Loggable } from './Log';
+
 /**
  * BitReader allows to read binary data bit by bit
  */
-export class BitReader {
+export class BitReader extends Loggable {
     private _data: Uint8Array;
     private _size: number;
     private _position: number;
     private _bit: number;
 
     constructor(data: BufferSource) {
+        super();
         if ('buffer' in data) {
             this._data = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
         } else {
@@ -82,7 +85,7 @@ export class BitReader {
         }
         const result = this.read(i);
         if (i > 15) {
-            console.warn('Exponential-Golomb code exceeding unsigned 16 bits');
+            this.log('Exponential-Golomb code exceeding unsigned 16 bits').warn();
             return 0;
         }
         return result + (1 << i) - 1;
