@@ -18,7 +18,7 @@ export { SDP } from './src/SDP';
 export * as Util from './src/Util';
 export { WebSocketReliable, WebSocketReliableError } from './src/WebSocketReliable';
 export * as EpochTime from './src/EpochTime';
-export { LogType, ILog, Log, Loggable, log } from './src/Log';
+export { LogLevel, ILog, Log, Loggable, log } from './src/Log';
 
 const __lib__version__ = '?'; // will be replaced on building by project version
 
