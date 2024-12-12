@@ -24,10 +24,8 @@ export enum LogLevel {
  * - redirect logs: redirect logs to one other logger engine
  * - redefine logs: change log text like adding a prefix
  *
- * You have 4 {@link LogLevel} 'error','warn','info',and 'debug',as commonly managed by browsers.
- *
- * log level by default is {@link LogLevel.INFO}, to displays {@link LogLevel.DEBUG} you must include an intentional
- * 'debug' query parameter in the loaded page and activate Verbose mode in the browser console.
+ * You have 4 {@link LogLevel} 'error','warn','info',and 'debug', as commonly managed by browsers.
+ * You can use {@link ILog.level} or {@link ILog.on} to customer log level and behavior.
  *
  * @example
  * // filter log level globally, independantly of the browser
@@ -35,7 +33,7 @@ export enum LogLevel {
  * log.level = LogLevel.WARN; // displays errors and warns
  *
  * // filter log level only for Player compoment
- * player.log.level = null; // no logs at all
+ * player.log.level = false; // no logs at all for player compoment
  *
  * // Intercept and redirect all the logs to the console (default behavior)
  * import { log } from '@ceeblue/web-utils';
@@ -80,10 +78,11 @@ export interface ILog {
     on: (level: LogLevel, args: unknown[]) => void;
     /**
      * Change log level, default log level is {@link LogLevel.INFO},
-     * or {@link LogLevel.DEBUG} when there is an intentional 'debug' query parameter in the loaded page
-     * If null it interceps all the logs
+     * Boolean can be user to lets pass all the logs with `true` or disables all the logs with `false`.
+     * @note To debug production code without modifying it you can use a special query parameter
+     * called !cb-override-log-level to override this configuration.
      */
-    level?: LogLevel | null;
+    level?: LogLevel | boolean;
 }
 
 // check coder issuer: everytime we don't forget to use the built Log
@@ -92,8 +91,8 @@ setInterval(() => {
     console.assert(_logging === 0, _logging.toFixed(), 'calls to log was useless');
 }, 10000);
 
-const _defaulLevel =
-    typeof location !== 'undefined' && location.search.startsWith('?debug!') ? LogLevel.DEBUG : LogLevel.INFO;
+// !cb-override-log-level
+const _overrideLogLevel = Util.options()['!cb-override-log-level'];
 
 const _charLevels = new Array(128);
 _charLevels[101] = _charLevels[69] = 1; // error
@@ -132,16 +131,22 @@ export class Log {
         ++_logging;
     }
 
-    private _onLog(log: ILog, level: LogLevel): boolean {
-        if (log.level === null) {
+    private _onLog(localLog: ILog, level: LogLevel): boolean {
+        // we take like log-level by priority order:
+        // 1- the overrideLogLevel
+        // 2- the localLog.level
+        // 3- the global log.level
+        // 4- LogLevel.INFO
+        const logLevel = _overrideLogLevel ?? localLog.level ?? log.level ?? LogLevel.INFO;
+        if (logLevel === false) {
             // explicit null, no log at all!
             return false;
         }
-        if (_charLevels[level.charCodeAt(0)] > _charLevels[(log.level || _defaulLevel).charCodeAt(0)]) {
+        if (logLevel !== true && _charLevels[level.charCodeAt(0)] > _charLevels[logLevel.charCodeAt(0)]) {
             return false;
         }
-        if (log.on) {
-            log.on(level, this._args);
+        if (localLog.on) {
+            localLog.on(level, this._args);
         }
         return this._args.length ? true : false;
     }
