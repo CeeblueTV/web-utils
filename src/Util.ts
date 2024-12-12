@@ -45,7 +45,7 @@ export function options(
     urlOrQueryOrSearch: URL | URLSearchParams | string | object | undefined = typeof location === 'undefined'
         ? undefined
         : location
-): object {
+): any {
     if (!urlOrQueryOrSearch) {
         return {};
     }
@@ -71,7 +71,7 @@ export function options(
  * @param params.noEmptyString `false`, if set it converts empty string value to a true boolean, usefull to allow a `if(result.key)` check for example
  * @returns An javascript object
  */
-export function objectFrom(value: any, params: { withType: boolean; noEmptyString: boolean }): object {
+export function objectFrom(value: any, params: { withType: boolean; noEmptyString: boolean }): any {
     params = Object.assign({ withType: false, noEmptyString: false }, params);
     const obj: any = {};
     if (!value) {
@@ -189,12 +189,15 @@ export function stringify(
         }
         return (res += space + ']');
     }
-    let res = '';
+    let res = '{';
     for (const name in obj) {
-        res += (res ? ',' : '{') + space + name + ':';
-        res += stringify(obj[name], Object.assign({ ...params }, { recursion: params.recursion - 1 }));
+        if (res.length > 1) {
+            res += ',';
+        }
+        res += space + name + ':';
+        res += stringify(obj[name], Object.assign({ ...params }, { recursion: params.recursion - 1 })) + space;
     }
-    return (res += space + '}');
+    return (res += '}');
 }
 
 /**
