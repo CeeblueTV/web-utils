@@ -20,6 +20,8 @@ export { WebSocketReliable, WebSocketReliableError } from './src/WebSocketReliab
 export * as EpochTime from './src/EpochTime';
 export { LogLevel, ILog, Log, Loggable, log } from './src/Log';
 
+export { UIMetrics } from './src/ui/UIMetrics';
+
 const __lib__version__ = '?'; // will be replaced on building by project version
 
 export const VERSION: string = __lib__version__;
