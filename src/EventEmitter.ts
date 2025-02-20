@@ -96,26 +96,24 @@ export class EventEmitter extends Loggable {
      * Event subscription
      * @param name Name of event without the `on` prefix (ex: `log` to `onLog` event declared)
      * @param event Subscriber Function
-     * @param abort Optional `AbortController` to stop this or multiple subscriptions in same time
+     * @param options.signal Optional `AbortSignal` to stop this or multiple subscriptions in same time
      */
-    on(name: string, event: Function, abort?: AbortController) {
+    on(name: string, event: Function, options?: { signal?: AbortSignal }) {
         if (!event) {
             throw Error('event to subscribe cannot be null');
         }
         const events = this._event(name);
         events.add(event);
-        if (abort) {
-            abort.signal.addEventListener('abort', () => events.delete(event), { once: true });
-        }
+        options?.signal?.addEventListener('abort', () => events.delete(event), { once: true });
     }
 
     /**
      * Event subscription only one time, once time fired it's automatically unsubscribe
      * @param name Name of event without the `on` prefix (ex: `log` to `onLog` event declared)
      * @param event Subscriber Function
-     * @param abort Optional `AbortController` to stop this or multiple subscriptions in same time
+     * @param options.abortSignal Optional `AbortSignal` to stop this or multiple subscriptions in same time
      */
-    once(name: string, event: Function, abort?: AbortController) {
+    once(name: string, event: Function, options?: { signal?: AbortSignal }) {
         if (!event) {
             throw Error('event to subscribe cannot be null');
         }
@@ -124,9 +122,7 @@ export class EventEmitter extends Loggable {
             events.delete(event); // delete from events
             event(...args); // execute event
         });
-        if (abort) {
-            abort.signal.addEventListener('abort', () => events.delete(event), { once: true });
-        }
+        options?.signal?.addEventListener('abort', () => events.delete(event), { once: true });
     }
 
     /**

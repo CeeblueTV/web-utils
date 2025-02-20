@@ -98,7 +98,7 @@ export function defineMediaExt(type: Type, params: Params) {
             break;
     }
     // Fix mediaExt in removing the possible '.' prefix
-    Util.trimStart(params.mediaExt, '.');
+    params.mediaExt = Util.trimStart(params.mediaExt, '.');
 }
 
 /**
