@@ -4,7 +4,7 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 
-const _encoder = new TextEncoder();
+import * as Util from './Util';
 
 /**
  * BinaryWriter allows to write data in its binary form
@@ -64,10 +64,21 @@ export class BinaryWriter {
      * Write binary data
      * @param data
      */
-    write(data: ArrayLike<number>): BinaryWriter {
-        this.reserve(this._size + data.length);
-        this._data.set(data, this._size);
-        this._size += data.length;
+    write(data: ArrayLike<number> | BufferSource | string): BinaryWriter {
+        let bin: Uint8Array | ArrayLike<number>;
+        if (typeof data === 'string') {
+            // Convertit la chaîne en Uint8Array
+            bin = Util.toBin(data);
+        } else if (data instanceof ArrayBuffer) {
+            bin = new Uint8Array(data);
+        } else if ('buffer' in data) {
+            bin = new Uint8Array(data.buffer, data.byteOffset ?? 0, data.byteLength);
+        } else {
+            bin = data;
+        }
+        this.reserve(this._size + bin.length);
+        this._data.set(bin, this._size);
+        this._size += bin.length;
         return this;
     }
 
@@ -144,7 +155,7 @@ export class BinaryWriter {
     }
 
     writeString(value: string): BinaryWriter {
-        return this.write(_encoder.encode(value)).write8(0);
+        return this.write(Util.toBin(value)).write8(0);
     }
 
     writeHex(value: string): BinaryWriter {
