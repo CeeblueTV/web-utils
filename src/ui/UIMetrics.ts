@@ -86,6 +86,22 @@ export class UIMetrics {
         this._stepSize = value;
     }
 
+    /**
+     * Return the space width available to display average metric
+     */
+    get averageDisplayWidth(): number {
+        // 7 chars (1 char width ≈ fontSize/2)
+        return (this._legendFontSize / 2) * 7;
+    }
+
+    /**
+     * Return the count of displayable metrics regarding the space available on the screen
+     */
+    get displayableCount(): number {
+        const width = this._ui.clientWidth - this.averageDisplayWidth;
+        return Math.ceil((width - this._labelWidth) / this._stepSize);
+    }
+
     private _ui: HTMLElement;
     private _html?: string;
     private _lineHeight: number;
@@ -127,23 +143,23 @@ export class UIMetrics {
         }
         this._html = '';
 
-        const averageWidth = (this._legendFontSize / 2) * 7; // 7 chars (1 char width ≈ fontSize/2)
-        const width = this._ui.clientWidth - averageWidth;
+        const averageDisplayWidth = this.averageDisplayWidth;
+        const averageCenter = averageDisplayWidth / 2;
+        const width = this._ui.clientWidth - averageDisplayWidth;
         const graphHeight = this._lineHeight - 2 * this._graphMargin;
         const graphMiddle = Math.round(this._lineHeight / 2);
         const textY = Math.round(this._lineHeight / 2 + this._textMargin);
         const titleWidth = this._labelWidth - 2 * this._textMargin;
 
-        const averageCenter = averageWidth / 2;
-
-        for (const [key, values] of stats) {
-            let x = this._labelWidth + values.length * this._stepSize;
-            if (x >= width) {
-                x -= values.splice(0, Math.ceil((x - width) / this._stepSize)).length * this._stepSize;
-            }
+        for (const [key, fullValues] of stats) {
+            const displayableCount = Math.ceil((width - this._labelWidth) / this._stepSize);
+            const values = fullValues.slice(Math.max(0, fullValues.length - displayableCount));
             if (!values.length) {
                 continue;
             }
+
+            let x = this._labelWidth + values.length * this._stepSize;
+
             /*
 			<svg class="list-group-item p-0" style="height: 40px;" xmlns="http://www.w3.org/2000/svg">
 				<text x="5" y="22">M text</text>
