@@ -7,7 +7,9 @@
 import { Loggable } from './Log';
 
 type FilterOnKey<T> = T extends 'once' | 'on' ? never :
-    T extends `on${infer R}` ? Uncapitalize<R> : never;
+    T extends `on${infer R}` ? R : never;
+type CaseVariations<T extends string> =
+    T | Lowercase<T> | Uppercase<T> | Capitalize<T> | Capitalize<Lowercase<T>> | Uncapitalize<T>;
 /**
  * Extract all event keys from a class.
  * @example
@@ -18,7 +20,7 @@ type FilterOnKey<T> = T extends 'once' | 'on' ? never :
  * type LoggerEvents = EventKeys<Logger>; // "log" | "click"
  */
 type EventKeys<Keys> = keyof {
-    [K in keyof Keys as FilterOnKey<K>]: never;
+    [K in keyof Keys as CaseVariations<FilterOnKey<K>>]: never;
 };
 
 /**
