@@ -35,7 +35,7 @@ export type Params = {
     /**
      * Optional query to add into the generated url of connection
      */
-    query?: Record<string, string>;
+    query?: URLSearchParams;
 };
 
 /**
@@ -139,8 +139,10 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
     if (params.accessToken) {
         url.searchParams.set('id', params.accessToken);
     }
-    for (const key in params.query) {
-        url.searchParams.set(key, params.query[key]);
+
+    if (params.query instanceof URLSearchParams) {
+        url.search = '?' + params.query.toString();
     }
+
     return url;
 }
