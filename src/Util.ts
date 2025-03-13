@@ -119,10 +119,14 @@ export function objectFrom(value: any, params: { withType: boolean; noEmptyStrin
 
 /**
  * Returns entries from something iterable, such as a Map, Set, or Array
+ * If value is null it returns an empty array
  * @param value iterable input
  * @returns An javascript object
  */
-export function objectEntries(value: any): [string, any][] {
+export function objectEntries(value: any | null): [string, any][] {
+    if (!value) {
+        return [];
+    }
     if (value.entries) {
         return value.entries();
     }
