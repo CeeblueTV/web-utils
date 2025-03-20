@@ -78,19 +78,18 @@ export class EventEmitter extends Loggable {
                 if (name.length < 3 || !name.startsWith('on')) {
                     continue;
                 }
-                if (proto[name] instanceof Function) {
+                let defaultEvent = proto[name];
+                if (defaultEvent instanceof Function) {
                     const events = new Set<Function>();
                     this._events.set(name.substring(2).toLowerCase(), events);
-                    let defaultEvent = proto[name];
                     const raise = (...args: unknown[]) => {
-                        // Call default event if not null (can happen in JS usage)
-                        if (defaultEvent) {
-                            defaultEvent.call(this, ...args);
-                        }
+                        // Call default event if not undefined, can happen if assigned to null/undefined
+                        const result = defaultEvent ? defaultEvent.call(this, ...args) : undefined;
                         // Call subscribers
                         for (const event of events) {
                             event(...args);
                         }
+                        return result;
                     };
                     Object.defineProperties(this, {
                         [name]: {
