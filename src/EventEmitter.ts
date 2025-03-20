@@ -6,6 +6,21 @@
 
 import { Loggable } from './Log';
 
+type FilterOnKey<T> = T extends 'once' | 'on' ? never : T extends `on${infer R}` ? R : never;
+type CaseVariations<T extends string> = string extends T ? string : Lowercase<T> | Capitalize<T>;
+/**
+ * Extract all event keys from a class.
+ * @example
+ * class Logger extends EventEmitter {
+ *   onLog(log:string) { console.log(log); }
+ *   onClick(log:string) { console.log(log); }
+ * }
+ * type LoggerEvents = EventKeys<Logger>; // "log" | "click"
+ */
+type EventKeys<Keys> = keyof {
+    [K in keyof Keys as CaseVariations<FilterOnKey<K>>]: never;
+};
+
 /**
  * A advanced EventEmitter which allows to declare event as natural function in the inheriting children class,
  * function must start by `on` prefix to be recognized as an event.
@@ -63,19 +78,18 @@ export class EventEmitter extends Loggable {
                 if (name.length < 3 || !name.startsWith('on')) {
                     continue;
                 }
-                if (proto[name] instanceof Function) {
+                let defaultEvent = proto[name];
+                if (defaultEvent instanceof Function) {
                     const events = new Set<Function>();
                     this._events.set(name.substring(2).toLowerCase(), events);
-                    let defaultEvent = proto[name];
                     const raise = (...args: unknown[]) => {
-                        // Call default event if not null (can happen in JS usage)
-                        if (defaultEvent) {
-                            defaultEvent.call(this, ...args);
-                        }
+                        // Call default event if not undefined, can happen if assigned to null/undefined
+                        const result = defaultEvent ? defaultEvent.call(this, ...args) : undefined;
                         // Call subscribers
                         for (const event of events) {
                             event(...args);
                         }
+                        return result;
                     };
                     Object.defineProperties(this, {
                         [name]: {
@@ -98,11 +112,11 @@ export class EventEmitter extends Loggable {
      * @param event Subscriber Function
      * @param options.signal Optional `AbortSignal` to stop this or multiple subscriptions in same time
      */
-    on(name: string, event: Function, options?: { signal?: AbortSignal }) {
-        if (!event) {
-            throw Error('event to subscribe cannot be null');
+    on(name: EventKeys<this>, event: Function, options?: { signal?: AbortSignal }) {
+        if (typeof event !== 'function') {
+            throw Error('event callback must be a function');
         }
-        const events = this._event(name);
+        const events = this._event(name as string);
         events.add(event);
         options?.signal?.addEventListener('abort', () => events.delete(event), { once: true });
     }
@@ -113,11 +127,11 @@ export class EventEmitter extends Loggable {
      * @param event Subscriber Function
      * @param options.abortSignal Optional `AbortSignal` to stop this or multiple subscriptions in same time
      */
-    once(name: string, event: Function, options?: { signal?: AbortSignal }) {
-        if (!event) {
-            throw Error('event to subscribe cannot be null');
+    once(name: EventKeys<this>, event: Function, options?: { signal?: AbortSignal }) {
+        if (typeof event !== 'function') {
+            throw Error('event callback must be a function');
         }
-        const events = this._event(name);
+        const events = this._event(name as string);
         events.add((...args: unknown[]) => {
             events.delete(event); // delete from events
             event(...args); // execute event
@@ -130,11 +144,12 @@ export class EventEmitter extends Loggable {
      * @param name Name of event without the 'on' prefix (ex: 'log' to 'onLog' event declared)
      * @param event Unsubscriber Function, must be the one passed to {@link on} or {@link once} subscription methods
      */
-    off(name: string, event: Function) {
+    off(name: EventKeys<this>, event: Function) {
         if (!event) {
             throw Error('event to unsubscribe cannot be null');
         }
-        this._event(name).delete(event);
+
+        return this._event(name as string).delete(event);
     }
 
     private _event(name: string): Set<Function> {
