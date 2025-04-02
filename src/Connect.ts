@@ -149,7 +149,7 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
     if (params.accessToken) {
         url.searchParams.set('id', params.accessToken);
     }
-    for (const [key, value] of Util.objectEntries(params.query)) {
+    for (const [key, value] of params.query ?? []) {
         url.searchParams.set(key, value);
     }
     return url;

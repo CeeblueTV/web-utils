@@ -77,7 +77,7 @@ export function objectFrom(value: any, params: { withType: boolean; noEmptyStrin
     if (!value) {
         return obj;
     }
-    for (const [key, val] of objectEntries(value)) {
+    for (const [key, val] of iterableEntries(value)) {
         value = val;
         if (params.withType && value != null && value.substring) {
             if (value) {
@@ -118,28 +118,28 @@ export function objectFrom(value: any, params: { withType: boolean; noEmptyStrin
 }
 
 /**
- * Returns entries from an iterable input like Map, Set, or Array.
+ * Returns a IterableIterator<[string, any]> from any iterable input like Map, Set, Array, or Object.
  *
- * For all other types of values (including `null` or `undefined`), it returns an empty array.
+ * For all other types of values (including `null` or `undefined`) it returns an empty iterator.
  *
  * @param value An iterable input
- * @returns An array of key-value pairs
+ * @returns a IterableIterator<[string, any]>
  */
-export function objectEntries(value: any): [string, any][] {
+export function iterableEntries(value: any): IterableIterator<[string, any]> {
     if (!value) {
-        return [];
+        return (function* () {})();
     }
-    if (value.entries && typeof value.entries === 'function') {
+    if (typeof value.entries === 'function') {
         value = value.entries();
-        if (Array.isArray(value)) {
-            return value;
+    }
+    if (typeof value[Symbol.iterator] === 'function') {
+        return value;
+    }
+    return (function* () {
+        for (const key in value) {
+            yield [key.toString(), value[key]];
         }
-    }
-    const entries: [string, any][] = [];
-    for (const key of Object.keys(value)) {
-        entries.push([key, value[key]]);
-    }
-    return entries;
+    })();
 }
 
 /**
