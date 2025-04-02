@@ -51,6 +51,13 @@ export class NetAddress {
     }
 
     /**
+     * The host part from address `(http://)domain:port/path)`
+     */
+    get host(): string {
+        return this._domain + (this._port ?? '');
+    }
+
+    /**
      * The domain part from address `(http://)domain(:port/path)`
      */
     get domain(): string {
@@ -62,9 +69,7 @@ export class NetAddress {
     get port(): number | undefined {
         return this._port;
     }
-    /**
-     * @returns the string address as passed in the constructor
-     */
+
     toString(): string {
         return this._address;
     }
