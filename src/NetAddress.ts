@@ -129,7 +129,7 @@ export class NetAddress {
         const endOfBrace = this._host.lastIndexOf(']'); // to support IPv6
         if (pos > endOfBrace) {
             const port = parseInt(address.substring(pos + 1));
-            if (port && port <= 0xffff) {
+            if (port >= 0 && port <= 0xffff) {
                 this._port = port;
                 this._domain = address.substring(0, pos);
             }
