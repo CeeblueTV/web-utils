@@ -143,7 +143,7 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
         if (!params.streamName) {
             // extract the second part of the URL's path (the first part being the protocol name), or the first path if no other part exists
             const parts = url.pathname.split('/');
-            params.streamName = parts[2] || parts[1] || parts[0];
+            params.streamName = Util.getBaseFile(parts[2] || parts[1] || parts[0]);
         }
     }
     if (params.accessToken) {
