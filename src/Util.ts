@@ -130,15 +130,16 @@ export function objectEntries(value: any): [string, any][] {
         return [];
     }
     if (value.entries && typeof value.entries === 'function') {
-        return Array.from(value.entries());
+        value = value.entries();
+        if (Array.isArray(value)) {
+            return value;
+        }
     }
-    return Array.from(
-        (function* () {
-            for (const key in value) {
-                yield [key.toString(), value[key]];
-            }
-        })()
-    );
+    const entries: [string, any][] = [];
+    for (const key of Object.keys(value)) {
+        entries.push([key, value[key]]);
+    }
+    return entries;
 }
 
 /**
