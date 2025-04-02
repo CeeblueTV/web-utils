@@ -54,7 +54,7 @@ export class NetAddress {
      * The host part from address `(http://)domain:port/path)`
      */
     get host(): string {
-        return this._domain + (this._port ?? '');
+        return this._host;
     }
 
     /**
@@ -83,6 +83,7 @@ export class NetAddress {
 
     private _address: string;
     private _domain: string;
+    private _host: string;
     private _port?: number;
     /**
      * Build a NetAddress object and parse address
@@ -113,21 +114,22 @@ export class NetAddress {
             } // else something else #/
         }
 
+        // Remove Path!
+        pos = address.indexOf('/');
+        if (pos >= 0) {
+            address = address.substring(0, pos);
+        }
+
+        this._host = address;
         this._domain = address;
         this._port = defaultPort;
 
         // Parse Port
-        pos = address.lastIndexOf(':');
+        pos = this._host.lastIndexOf(':');
         if (pos >= 0) {
             const port = parseInt(address.substring(pos + 1));
             if (port && port <= 0xffff) {
                 this._port = port;
-                this._domain = address.substring(0, pos);
-            }
-        } else {
-            // Remove Path!
-            pos = address.indexOf('/');
-            if (pos >= 0) {
                 this._domain = address.substring(0, pos);
             }
         }
