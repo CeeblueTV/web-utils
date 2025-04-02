@@ -118,25 +118,28 @@ export function objectFrom(value: any, params: { withType: boolean; noEmptyStrin
 }
 
 /**
- * Returns entries from something iterable, such as a Map, Set, or Array
- * If value is null it returns an empty array
- * @param value iterable input
- * @returns An javascript object
+ * Returns entries from an iterable input like Map, Set, or Array.
+ *
+ * For all other types of values (including `null` or `undefined`), it returns an empty array.
+ *
+ * @param value An iterable input
+ * @returns An array of key-value pairs
  */
-export function objectEntries(value: any | null): [string, any][] {
+export function objectEntries(value: any): [string, any][] {
     if (!value) {
         return [];
     }
-    if (value.entries) {
-        return value.entries();
-    }
-    return Array.from({
-        [Symbol.iterator]: function* () {
-            for (const key in value) {
-                yield [key, value[key]];
-            }
+    if (value.entries && typeof value.entries === 'function') {
+        value = value.entries();
+        if (Array.isArray(value)) {
+            return value;
         }
-    });
+    }
+    const entries: [string, any][] = [];
+    for (const key of Object.keys(value)) {
+        entries.push([key, value[key]]);
+    }
+    return entries;
 }
 
 /**
