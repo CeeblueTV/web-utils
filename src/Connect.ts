@@ -16,7 +16,9 @@ export type Params = {
      */
     endPoint: string;
     /**
-     * The name of the stream to join
+     * The name of the stream to join.
+     * If `endPoint` is a complete URL and `streamName` is not provided, {@link buildURL} will set this parameter automatically
+     * using the second part of the URL's path (the first part being the protocol name), or the first path if no other part exists.
      */
     streamName: string;
     /**
@@ -29,7 +31,7 @@ export type Params = {
     iceServer?: RTCIceServer; // Authentication value
     /**
      * Optional media extension (mp4, flv, ts, rts), usefull for protocol like WebRTS which supports different container type.
-     * When not set, it's also an output parameter to indicate what is the media type selected
+     * When not set, it's also an output parameter for {@link defineMediaExt} to indicate what is the media type selected
      */
     mediaExt?: string;
     /**
@@ -103,6 +105,7 @@ export function defineMediaExt(type: Type, params: Params) {
 
 /**
  * Build an URL from {@link Type | type} and {@link Params | params}
+ * Can assign {@link Params.mediaExt | params.mediaExt} or {@link Params.streamName | params.streamName}
  * @param type Type of the connection wanted
  * @param params Connection parameters
  * @param protocol Optional parameter to choose the prefered protocol to connect
@@ -135,7 +138,14 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
                 console.warn('Unknown url type ' + type);
                 break;
         }
-    } // Host has already a path! keep it unchanged, it's user intentionnal (used with some other WHIP/WHEP server?)
+    } else {
+        // Host has already a path! keep it unchanged, it's user intentionnal (used with some other WHIP/WHEP server?)
+        if (!params.streamName) {
+            // extract the second part of the URL's path (the first part being the protocol name), or the first path if no other part exists
+            const parts = url.pathname.split('/');
+            params.streamName = parts[2] || parts[1] || parts[0];
+        }
+    }
     if (params.accessToken) {
         url.searchParams.set('id', params.accessToken);
     }
