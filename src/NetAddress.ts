@@ -126,7 +126,8 @@ export class NetAddress {
 
         // Parse Port
         pos = this._host.lastIndexOf(':');
-        if (pos >= 0) {
+        const endOfBrace = this._host.lastIndexOf(']'); // to support IPv6
+        if (pos > endOfBrace) {
             const port = parseInt(address.substring(pos + 1));
             if (port && port <= 0xffff) {
                 this._port = port;
