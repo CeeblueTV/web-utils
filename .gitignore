@@ -3,7 +3,7 @@ dist/
 docs/**/*.html
 docs/.nojekyll
 docs/assets
-
+coverage/
 # OS
 .DS_Store
 
