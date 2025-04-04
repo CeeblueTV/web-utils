@@ -135,7 +135,7 @@ export class Log {
             // explicit null, no log at all!
             return false;
         }
-        if (logLevel !== true && _charLevels[level.charCodeAt(0)] > _charLevels[logLevel.charCodeAt(0)]) {
+        if (logLevel !== true && _charLevels[level.charCodeAt(0)] > _charLevels[(logLevel as string).charCodeAt(0)]) {
             return false;
         }
         if (localLog.on) {
