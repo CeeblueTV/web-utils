@@ -33,7 +33,7 @@ export function time(): number {
  * Time origin represents the time when the application has started
  */
 export function timeOrigin(): number {
-    return Math.floor(_perf.now() + _perf.timeOrigin);
+    return Math.floor(_perf.timeOrigin);
 }
 
 /**
@@ -45,12 +45,12 @@ export function options(
     urlOrQueryOrSearch: URL | URLSearchParams | string | object | undefined = typeof location === 'undefined'
         ? undefined
         : location
-): any {
+): Record<string, unknown> {
     if (!urlOrQueryOrSearch) {
         return {};
     }
     try {
-        const url: any = urlOrQueryOrSearch;
+        const url = String(urlOrQueryOrSearch);
         urlOrQueryOrSearch = new URL(url).searchParams;
     } catch (e) {
         if (typeof urlOrQueryOrSearch == 'string') {
@@ -72,8 +72,9 @@ export function options(
  * @returns An javascript object
  */
 export function objectFrom(value: any, params: { withType: boolean; noEmptyString: boolean }): any {
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     params = Object.assign({ withType: false, noEmptyString: false }, params);
-    const obj: any = {};
+    const obj: any = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
     if (!value) {
         return obj;
     }
@@ -126,6 +127,7 @@ export function objectFrom(value: any, params: { withType: boolean; noEmptyStrin
  * @returns a IterableIterator<[string, any]>
  */
 export function iterableEntries(value: any): IterableIterator<[string, any]> {
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     if (!value) {
         return (function* () {})();
     }
@@ -156,7 +158,7 @@ export function iterableEntries(value: any): IterableIterator<[string, any]> {
 // Online Javascript Editor for free
 // Write, Edit and Run your Javascript code using JS Online Compiler
 export function stringify(
-    obj: any,
+    obj: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     params: { space?: string; decimal?: number; recursion?: number; noBin?: boolean } = {}
 ): string {
     params = Object.assign({ space: ' ', decimal: 2, recursion: 1, noBin: false }, params);
@@ -208,7 +210,8 @@ export function stringify(
 }
 
 /**
- * Encode a string to a binary representation
+ * Encode a string to a binary representation using UTF-8.
+ *
  * @param value string value to convert
  * @returns binary conversion
  */
@@ -219,51 +222,120 @@ export function toBin(value: string): Uint8Array {
 /**
  * Execute a promise in a safe way with a timeout if caller doesn't resolve it in the accurate time
  */
-export function safePromise<T>(timeout: number, promise: Promise<T>) {
+export async function safePromise<T>(timeout: number, promise: Promise<T>): Promise<T> {
     // Returns a race between our timeout and the passed in promise
-    let timer: NodeJS.Timeout;
-    return Promise.race([
-        promise instanceof Promise ? promise : new Promise(promise),
-        new Promise((resolve, reject) => (timer = setTimeout(() => reject('timed out in ' + timeout + 'ms'), timeout)))
-    ]).finally(() => clearTimeout(timer));
+    let timer: ReturnType<typeof setTimeout> | undefined = void 0;
+
+    const timeoutPromise = new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+            reject(new Error(`Promise timedout after ${timeout}ms`));
+        }, timeout);
+    });
+
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        if (timer) {
+            clearTimeout(timer);
+        }
+    }
 }
 
 /**
  * Wait in milliseconds, requires a call with await keyword!
  */
-export function sleep(ms: number) {
+export async function sleep(ms: number) {
     return new Promise(resolve => {
         setTimeout(resolve, ms);
     });
 }
 
 /**
- * Test equality between two value whatever their type, array included
+ * Compares two values for equality, including simple arrays and iterators,
+ * Nested iterators and objects are not supported.
  */
-export function equal(a: any, b: any) {
-    if (Object(a) !== a) {
-        if (Object(b) === b) {
+export function equal(a: unknown, b: unknown) {
+    if (isIterator(a) && isIterator(b)) {
+        return iteratorsEqual(a, b);
+    }
+
+    if (typeof a === 'object' && typeof b === 'object') {
+        if (a === null || b === null) {
+            return a === b;
+        }
+
+        return compareObjects(a as Record<string, unknown>, b as Record<string, unknown>);
+    }
+
+    return sameValue(a, b);
+}
+
+/**
+ * Compares two objects with primitive values, doesn't compare nested objects or iterators.
+ */
+function compareObjects(a: Record<string, unknown>, b: Record<string, unknown>) {
+    for (const key in a) {
+        if (!(key in b) || !sameValue(a[key], b[key])) {
             return false;
         }
-        // both primitive (null and undefined included)
+    }
+
+    return true;
+}
+
+/**
+ * Implements https://tc39.es/ecma262/multipage/abstract-operations.html#sec-samevalue
+ */
+function sameValue(a: unknown, b: unknown) {
+    // If SameType(x, y) is false, return false.
+    if (typeof a !== typeof b) {
+        return false;
+    }
+
+    // 2. If x is a Number, then
+    // a. Return Number::sameValue(x, y).
+    if (typeof a === 'number' && typeof b === 'number') {
+        // we compare b to narrow down the type.
+        if (isNaN(a)) {
+            // If x is NaN and y is NaN, return true.
+            return isNaN(b);
+        }
+
+        // 2. If x is +0𝔽 and y is -0𝔽, return false.
+        // 3. If x is -0𝔽 and y is +0𝔽, return false.
+        // 4. If x is y, return true.
+        // 5. Return false.
         return a === b;
     }
-    // complexe object
-    if (a[Symbol.iterator]) {
-        if (!b[Symbol.iterator]) {
-            return false;
-        }
-        if (a.length !== b.length) {
-            return false;
-        }
-        for (let i = 0; i !== a.length; ++i) {
-            if (a[i] !== b[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
+
     return a === b;
+}
+
+// Compares two iterables by their iterator values.
+function iteratorsEqual(a: Iterable<unknown>, b: Iterable<unknown>): boolean {
+    const aIter = a[Symbol.iterator]();
+    const bIter = b[Symbol.iterator]();
+
+    for (;;) {
+        const aNext = aIter.next();
+        const bNext = bIter.next();
+
+        if (aNext.done && bNext.done) {
+            return true;
+        }
+
+        if (aNext.done !== bNext.done) {
+            return false;
+        }
+
+        if (!sameValue(aNext.value, bNext.value)) {
+            return false;
+        }
+    }
+}
+
+function isIterator(value: unknown): value is Iterable<unknown> {
+    return typeof value === 'object' && value !== null && Symbol.iterator in value;
 }
 
 /**
@@ -271,14 +343,16 @@ export function equal(a: any, b: any) {
  * - throw an string exception if response code is not 200 with the text of the response or uses statusText
  */
 export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const response = await self.fetch(input, init);
-    if (response.status >= 300) {
-        let error;
-        if (response.body) {
-            error = await response.text();
-        }
-        throw (error || response.statusText || response.status).toString();
+    const response = await globalThis.fetch(input, init);
+
+    // This is a simple helper to expect a final response (200-299).
+    // Not a redirect, not a client error, not a server error.
+    if (!response.ok) {
+        const errorMessage = (await response.text()) || response.statusText;
+
+        throw new Error(`Fetching a response failed with status ${response.status} - ${errorMessage}`);
     }
+
     return response;
 }
 
@@ -313,31 +387,19 @@ export function getBaseFile(path: string): string {
     return dot >= 0 && dot >= file ? path.substring(file, dot) : path.substring(file);
 }
 
-function codesFromString(value: string): Array<number> {
-    const codes = [];
-    for (let i = 0; i < value.length; ++i) {
-        codes.push(value.charCodeAt(i));
-    }
-    return codes;
-}
-
 /**
- * String Trim function with customizable chars
+ * String Trim function with customizable unicode characters to trim.
+ *
  * @param value string to trim
  * @param chars chars to use to trim
  * @returns string trimmed
  */
-export function trim(value: string, chars: string = ' '): string {
-    const codes = codesFromString(chars);
-    let start = 0;
-    while (start < value.length && codes.includes(value.charCodeAt(start))) {
-        ++start;
+export function trim(value: string, chars?: string): string {
+    if (typeof chars !== 'string') {
+        return value.trim();
     }
-    let end = value.length;
-    while (end > 0 && codes.includes(value.charCodeAt(end - 1))) {
-        --end;
-    }
-    return value.substring(start, end);
+
+    return trimStart(trimEnd(value, chars), chars);
 }
 
 /**
@@ -346,13 +408,28 @@ export function trim(value: string, chars: string = ' '): string {
  * @param chars chars to use to trim start
  * @returns string trimmed
  */
-export function trimStart(value: string, chars: string = ' '): string {
-    const codes = codesFromString(chars);
-    let i = 0;
-    while (i < value.length && codes.includes(value.charCodeAt(i))) {
-        ++i;
+export function trimStart(value: string, chars?: string): string {
+    if (typeof chars !== 'string') {
+        if (typeof value.trimStart === 'function') {
+            return value.trimStart();
+        }
+
+        // add polyfill during build instead?
+        return value.replace(/^[\s\uFEFF\xA0]+/, '');
     }
-    return value.substring(i);
+
+    const unicodeChars = [...chars];
+
+    let trimLength = 0;
+    for (const char of value) {
+        if (!unicodeChars.includes(char)) {
+            break;
+        }
+
+        trimLength += char.length;
+    }
+
+    return value.slice(trimLength);
 }
 
 /**
@@ -361,11 +438,35 @@ export function trimStart(value: string, chars: string = ' '): string {
  * @param chars chars to use to trim end
  * @returns string trimmed
  */
-export function trimEnd(value: string, chars: string = ' '): string {
-    const codes = codesFromString(chars);
-    let i = value.length;
-    while (i > 0 && codes.includes(value.charCodeAt(i - 1))) {
-        --i;
+export function trimEnd(value: string, chars?: string): string {
+    if (typeof chars !== 'string') {
+        if (typeof value.trimEnd === 'function') {
+            return value.trimEnd();
+        }
+
+        // add polyfill during build instead?
+        return value.replace(/[\s\uFEFF\xA0]+$/, '');
     }
-    return value.substring(0, i);
+
+    const unicodeChars = [...chars];
+    let trimLength = value.length;
+    while (trimLength > 0) {
+        let length = 1;
+
+        // Check if the current position is the low surrogate of a surrogate pair.
+        if (value.charCodeAt(trimLength - 1) >= 0xdc00 && value.charCodeAt(trimLength - 1) <= 0xdfff) {
+            // If yes, adjust the index to include the high surrogate.
+            length = 2;
+        }
+
+        const char = value.slice(trimLength - length, trimLength);
+
+        if (!unicodeChars.includes(char)) {
+            break;
+        }
+
+        trimLength -= length;
+    }
+
+    return value.slice(0, trimLength);
 }
