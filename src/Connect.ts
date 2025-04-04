@@ -7,6 +7,44 @@ import * as Util from './Util';
 import { NetAddress } from './NetAddress';
 
 /**
+ * Parameters of a key system for encrypted streams (DRM)
+ *
+ * If the key system is a string, it's the URL of the license server.
+ *
+ * If the key system is an object, it's a key system configuration with more parameters.
+ */
+export type KeySystem =
+    | string
+    | {
+          /**
+           * The license server URL
+           */
+          licenseUrl: string;
+          /**
+           * The certificate URL if needed (for FairPlay)
+           *
+           * Or directly the certificate
+           */
+          certificateUrl?: string | Uint8Array;
+          /**
+           * The additional HTTP headers to send to the license server
+           */
+          headers?: Record<string, string>;
+          /**
+           * Audio robustness level
+           *
+           * A list of robustness levels, prioritized by the order of the array.
+           */
+          audioRobustness?: string[];
+          /**
+           * Video robustness level
+           *
+           * A list of robustness levels, prioritized by the order of the array.
+           */
+          videoRobustness?: string[];
+      };
+
+/**
  * Parameters of connections
  */
 export type Params = {
@@ -29,6 +67,10 @@ export type Params = {
      * iceServer to use while connecting to a WebRTC stream
      */
     iceServer?: RTCIceServer; // Authentication value
+    /**
+     * Map of keys to content protection settings for encrypted streams
+     */
+    contentProtection?: Record<string, KeySystem>;
     /**
      * Optional media extension (mp4, flv, ts, rts), usefull for protocol like WebRTS which supports different container type.
      * When not set, it's also an output parameter for {@link defineMediaExt} to indicate what is the media type selected
