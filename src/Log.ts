@@ -85,12 +85,6 @@ export interface ILog {
     level?: LogLevel | boolean;
 }
 
-// check coder issuer: everytime we don't forget to use the built Log
-let _logging = 0;
-setInterval(() => {
-    console.assert(_logging === 0, _logging.toFixed(), 'calls to log was useless');
-}, 10000);
-
 // !cb-override-log-level
 const _overrideLogLevel = Util.options()['!cb-override-log-level'];
 
@@ -128,7 +122,6 @@ export class Log {
         }
         this._args = args;
         this._log = log;
-        ++_logging;
     }
 
     private _onLog(localLog: ILog, level: LogLevel): boolean {
@@ -154,7 +147,6 @@ export class Log {
     private _bind(level: LogLevel) {
         if (!this._done) {
             this._done = true;
-            --_logging;
         }
         // call the global onLog in first (global filter)
         if (!this._onLog(log, level)) {
