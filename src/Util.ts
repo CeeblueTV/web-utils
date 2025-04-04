@@ -72,9 +72,8 @@ export function options(
  * @returns An javascript object
  */
 export function objectFrom(value: any, params: { withType: boolean; noEmptyString: boolean }): any {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
     params = Object.assign({ withType: false, noEmptyString: false }, params);
-    const obj: any = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const obj: any = {};
     if (!value) {
         return obj;
     }
@@ -126,8 +125,7 @@ export function objectFrom(value: any, params: { withType: boolean; noEmptyStrin
  * @param value An iterable input
  * @returns a IterableIterator<[string, any]>
  */
-export function iterableEntries(value: any): IterableIterator<[string, any]> {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
+export function iterableEntries(value: any): IterableIterator<[string, unknown]> {
     if (!value) {
         return (function* () {})();
     }
