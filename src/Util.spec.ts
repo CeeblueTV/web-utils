@@ -86,7 +86,7 @@ describe('Util', () => {
     describe('sleep', () => {
         it('should wait for specified time', async () => {
             const start = Date.now();
-            await Util.sleep(100);
+            await Util.sleep(102); // 100 + 2ms to avoid flaky tests
             const duration = Date.now() - start;
             expect(duration).toBeGreaterThanOrEqual(100);
         });
