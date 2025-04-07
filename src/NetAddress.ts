@@ -29,6 +29,8 @@ export class NetAddress {
      * console.log(NetAddress.fixProtocol('wss','http://domain/path')) // 'ws://domain/path'
      */
     static fixProtocol(protocol: string, address: string): string {
+        // Remove leading slashes for absolute pathes!
+        address = address.replace(/^[\/]+/, '');
         const found = address.indexOf('://');
         // isolate protocol is present in address
         if (found >= 0) {
@@ -124,14 +126,14 @@ export class NetAddress {
         this._domain = address;
         this._port = defaultPort;
 
-        // Parse Port
-        pos = this._host.lastIndexOf(':');
-        const endOfBrace = this._host.lastIndexOf(']'); // to support IPv6
-        if (pos > endOfBrace) {
-            const port = parseInt(address.substring(pos + 1));
-            if (port >= 0 && port <= 0xffff) {
-                this._port = port;
-                this._domain = address.substring(0, pos);
+        const domainPortMatch = this._host.match(/^(?:\[([0-9a-fA-F:]+)\]|([^:/?#]+))(?::(\d+))?(?=[/#?]|$)/);
+        if (domainPortMatch) {
+            this._domain = domainPortMatch[1] || domainPortMatch[2];
+            if (domainPortMatch[3]) {
+                const port = parseInt(domainPortMatch[3]);
+                if (port > 0 && port <= 0xffff) {
+                    this._port = port;
+                }
             }
         }
     }
