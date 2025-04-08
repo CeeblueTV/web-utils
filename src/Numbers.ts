@@ -17,6 +17,8 @@ export class Numbers extends Queue<number> {
      * minimum value in the collection, or 0 if colleciton is empty
      */
     get minimum(): number {
+        // We return 0 if the minimum is NaN, To keep the original behavior for code that relies on this.
+        // But we should consider to return -Infinity instead.
         if (isNaN(this._min)) {
             return 0;
         }
@@ -27,6 +29,8 @@ export class Numbers extends Queue<number> {
      * maximum value in the collection, or 0 if colleciton is empty
      */
     get maximum(): number {
+        // We return 0 if the maximum is NaN, To keep the original behavior for code that relies on this.
+        // But we should consider to return Infinity instead.
         if (isNaN(this._max)) {
             return 0;
         }
