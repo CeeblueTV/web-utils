@@ -65,7 +65,7 @@ export class Queue<Type> {
     }
 
     private _capacity?: number;
-    private _queue: Array<Type>;
+    protected _queue: Array<Type>;
     /**
      * Instanciate a new queue object with the type passed as template
      * @param capacity if set it limits the size of the queue, any exceding element pops the first element pushed (FIFO)

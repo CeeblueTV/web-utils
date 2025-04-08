@@ -17,6 +17,9 @@ export class Numbers extends Queue<number> {
      * minimum value in the collection, or 0 if colleciton is empty
      */
     get minimum(): number {
+        if (isNaN(this._min)) {
+            return 0;
+        }
         return this._min;
     }
 
@@ -24,6 +27,10 @@ export class Numbers extends Queue<number> {
      * maximum value in the collection, or 0 if colleciton is empty
      */
     get maximum(): number {
+        if (isNaN(this._max)) {
+            return 0;
+        }
+
         return this._max;
     }
 
@@ -39,8 +46,9 @@ export class Numbers extends Queue<number> {
 
     private _average?: number;
     private _sum: number = 0;
-    private _min: number = 0;
-    private _max: number = 0;
+    private _min: number = NaN;
+    private _max: number = NaN;
+
     /**
      * Instantiate the collection of the number
      * @param capacity if set it limits the number of values stored, any exceding number pops the first number pushed (FIFO)
@@ -55,14 +63,18 @@ export class Numbers extends Queue<number> {
      * @returns this
      */
     push(value: number): Numbers {
-        if (value > this._max) {
+        if (value > this._max || isNaN(this._max)) {
             this._max = value;
-        } else if (value < this._min) {
+        }
+
+        if (value < this._min || isNaN(this._min)) {
             this._min = value;
         }
+
         this._average = undefined;
         this._sum += value;
         super.push(value);
+
         return this;
     }
 
@@ -72,11 +84,15 @@ export class Numbers extends Queue<number> {
      */
     pop(): number | undefined {
         const front = super.pop();
+
         if (front === this._max) {
-            this._max = Math.max(0, ...this);
-        } else if (front === this._min) {
-            this._min = Math.min(0, ...this);
+            this._max = this._queue.length ? Math.max(...this._queue) : NaN;
         }
+
+        if (front === this._min) {
+            this._min = this._queue.length ? Math.min(...this._queue) : NaN;
+        }
+
         this._average = undefined;
         this._sum -= front || 0;
         return front;
@@ -87,7 +103,9 @@ export class Numbers extends Queue<number> {
      * @returns this
      */
     clear() {
-        this._min = this._max = this._sum = 0;
+        this._sum = 0;
+        this._min = NaN;
+        this._max = NaN;
         super.clear();
         return this;
     }
