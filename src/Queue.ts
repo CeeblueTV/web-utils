@@ -21,10 +21,14 @@ export class Queue<Type> {
     }
 
     /**
-     * Maximum capacity for the queue, if not set queue has unlimited capacity
+     * Maximum capacity for the queue, if not set queue has unlimited capacity.
      */
     get capacity(): number | undefined {
-        return this._capacity;
+        if (typeof this._capacity === 'number' && !isNaN(this._capacity) && this._capacity >= 0) {
+            return this._capacity;
+        }
+
+        return void 0;
     }
 
     /**
@@ -77,9 +81,13 @@ export class Queue<Type> {
      * @returns this
      */
     push(value: Type): Queue<Type> {
-        if (this._capacity != null && this._queue.push(value) > this._capacity) {
+        const size = this._queue.push(value);
+        const capacity = this.capacity;
+
+        if (typeof capacity === 'number' && size > capacity) {
             this.pop();
         }
+
         return this;
     }
 
