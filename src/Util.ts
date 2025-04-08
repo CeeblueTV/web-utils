@@ -53,7 +53,7 @@ export function options(
         const url = String(urlOrQueryOrSearch);
         urlOrQueryOrSearch = new URL(url).searchParams;
     } catch (e) {
-        if (typeof urlOrQueryOrSearch == 'string') {
+        if (typeof urlOrQueryOrSearch === 'string') {
             if (urlOrQueryOrSearch.startsWith('?')) {
                 urlOrQueryOrSearch = urlOrQueryOrSearch.substring(1);
             }
@@ -160,7 +160,7 @@ export function stringify(
     params: { space?: string; decimal?: number; recursion?: number; noBin?: boolean } = {}
 ): string {
     params = Object.assign({ space: ' ', decimal: 2, recursion: 1, noBin: false }, params);
-    if (obj == null) {
+    if (typeof obj !== 'object' || obj === null) {
         return String(obj);
     }
     const error = obj.error || obj.message;

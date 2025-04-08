@@ -33,7 +33,8 @@ export function getLatency(
     context.drawImage(sourceEl, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 
     const timestamp = decodeTimestamp(context, canvas.width, blocksPerRow, tolerance);
-    return timestamp == null ? 0 : now.getTime() - timestamp.getTime();
+
+    return typeof timestamp === 'number' ? now.getTime() - timestamp : 0;
 }
 
 /**

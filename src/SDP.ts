@@ -148,7 +148,7 @@ export const SDP = {
                 continue;
             }
             const value = obj[key];
-            if (value == null) {
+            if (typeof value === 'undefined' || value === null) {
                 continue;
             } // ignore this key/value
             const index = parseInt(key);

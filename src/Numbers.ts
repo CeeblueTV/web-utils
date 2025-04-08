@@ -31,7 +31,7 @@ export class Numbers extends Queue<number> {
      * average value of the collection, or 0 if collection if empty
      */
     get average(): number {
-        if (this._average == null) {
+        if (typeof this._average !== 'number') {
             this._average = this.size ? this._sum / this.size : 0;
         }
         return this._average;
