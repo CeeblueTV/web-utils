@@ -25,7 +25,7 @@ export type KeySystem =
            *
            * Or directly the certificate
            */
-          certificateUrl?: string | Uint8Array;
+          certificate?: string | Uint8Array;
           /**
            * The additional HTTP headers to send to the license server
            */
@@ -69,6 +69,7 @@ export type Params = {
     iceServer?: RTCIceServer; // Authentication value
     /**
      * Map of keys to content protection settings for encrypted streams
+     * The key can be "com.apple.fps" for example for FairPlay
      */
     contentProtection?: Record<string, KeySystem>;
     /**
