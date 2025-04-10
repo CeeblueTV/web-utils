@@ -131,7 +131,7 @@ export class NetAddress {
             this._domain = domainPortMatch[1] || domainPortMatch[2];
             if (domainPortMatch[3]) {
                 const port = parseInt(domainPortMatch[3]);
-                if (port > 0 && port <= 0xffff) {
+                if (port >= 0 && port <= 0xffff) {
                     this._port = port;
                 }
             }

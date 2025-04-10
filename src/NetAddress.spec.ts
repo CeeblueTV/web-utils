@@ -23,6 +23,13 @@ describe('NetAddress', () => {
             expect(address.toString()).toBe('example.com:8080');
         });
 
+        it('should parse address with port', () => {
+            const address = new NetAddress('example.com:0');
+            expect(address.domain).toBe('example.com');
+            expect(address.port).toBe(0);
+            expect(address.toString()).toBe('example.com:0');
+        });
+
         it('should parse address with path', () => {
             const address = new NetAddress('example.com/path');
             expect(address.domain).toBe('example.com');
