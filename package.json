@@ -21,7 +21,6 @@
         "build:es5": "rollup -c --format umd",
         "build:docs": "typedoc index.ts",
         "test": "vitest",
-        "test:watch": "vitest --watch",
         "test:coverage": "vitest --coverage",
         "lint": "eslint . && prettier --check .",
         "eslint": "eslint --fix .",
