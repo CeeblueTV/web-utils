@@ -11,9 +11,10 @@ describe('Util', () => {
     describe('time functions', () => {
         it('should calculate passed time, since the origin', async () => {
             const timeOrigin = Util.timeOrigin();
+            const start = Util.time();
             await new Promise(resolve => setTimeout(resolve, 100));
             expect(Util.timeOrigin()).toEqual(timeOrigin);
-            expect(Util.time()).toBeGreaterThanOrEqual(timeOrigin + 100);
+            expect(Util.time()).toBeGreaterThanOrEqual(start + 100);
         });
     });
 
