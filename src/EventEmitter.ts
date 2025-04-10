@@ -132,11 +132,12 @@ export class EventEmitter extends Loggable {
             throw Error('event callback must be a function');
         }
         const events = this._event(name as string);
-        events.add((...args: unknown[]) => {
-            events.delete(event); // delete from events
+        const wrapper = (...args: unknown[]) => {
+            events.delete(wrapper); // delete the wrapper from events
             event(...args); // execute event
-        });
-        options?.signal?.addEventListener('abort', () => events.delete(event), { once: true });
+        };
+        events.add(wrapper);
+        options?.signal?.addEventListener('abort', () => events.delete(wrapper), { once: true });
     }
 
     /**
