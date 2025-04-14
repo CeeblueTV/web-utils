@@ -51,9 +51,9 @@ export class BitReader extends Loggable {
     read(count = 1): number {
         let result = 0;
         while (this._position !== this._size && count--) {
-            result <<= 1;
+            result = result * 2; // Multiply instead of shifting
             if (this._data[this._position] & (0x80 >> this._bit++)) {
-                result |= 1;
+                result += 1;
             }
             if (this._bit === 8) {
                 this._bit = 0;

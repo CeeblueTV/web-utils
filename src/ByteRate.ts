@@ -36,24 +36,18 @@ export class ByteRate {
      */
     set interval(value: number) {
         this._interval = value;
-        this.updateSamples();
+        this._updateWindow();
     }
 
     private _interval: number;
-    private _bytes!: number;
-    private _time!: number; // beginning of the samples !
-    private _samples!: Array<{ time: number; bytes: number; clip: boolean }>;
-    private _clip!: boolean;
+    private _window: Array<{ time: number; bytes: number }> = [];
+    private _totalBytes: number = 0;
 
     /**
      * Constructor initializes the ByteRate object with a specified interval (default: 1000ms).
-     * It sets up necessary variables to track byte rate over time.
-     *
-     * @param interval - Time interval in milliseconds to compute the byte rate.
      */
     constructor(interval = 1000) {
         this._interval = interval;
-        this.clear();
     }
 
     /**
@@ -67,97 +61,58 @@ export class ByteRate {
      * Computes the exact byte rate in bytes per second
      */
     exact(): number {
-        // compute rate/s
-        this.updateSamples();
-        const duration = Util.time() - this._time;
-        return duration ? (this._bytes / duration) * 1000 : 0;
+        this._updateWindow();
+        if (this._window.length === 0) {
+            return 0;
+        }
+
+        const duration = Util.time() - this._window[0].time;
+        return duration ? (this._totalBytes / duration) * 1000 : 0;
     }
 
     /**
-     * Adds a new byte sample to the tracking system.
-     * Updates the list of samples and recomputes the byte rate
-     *
-     * @param bytes - Number of bytes added in this interval
+     * Adds a new byte sample to the tracking system
      */
     addBytes(bytes: number): ByteRate {
         const time = Util.time();
-        const lastSample = this.updateSamples(time)[this._samples.length - 1];
-        const lastTime = lastSample?.time ?? this._time;
-        if (time > lastTime) {
-            this._samples.push({ bytes, time, clip: false });
-        } else {
-            // no new duration => attach byte to last-one
-            if (!lastSample) {
-                // Ignore, was before our ByteRate scope !
-                return this;
-            }
-            lastSample.bytes += bytes;
-        }
-        this._bytes += bytes;
+        this._window.push({ time, bytes });
+        this._totalBytes += bytes;
+        this._updateWindow();
         this.onBytes(bytes);
         return this;
     }
 
     /**
-     * Clears all recorded byte rate data.
+     * Clears all recorded byte rate data
      */
     clear(): ByteRate {
-        this._bytes = 0;
-        this._time = Util.time();
-        this._samples = [];
-        this._clip = false;
+        this._window = [];
+        this._totalBytes = 0;
         return this;
     }
 
     /**
-     * Clips the byte rate tracking by marking the last sample as clipped.
-     * If a previous clip exists, removes the clipped sample and all preceding samples.
-     * Allows to shrink the interval manually between two positions.
+     * Clips the byte rate tracking by removing all samples before the last clip point
      */
     clip(): ByteRate {
-        if (this._clip) {
-            this._clip = false;
-            let removes = 0;
-            for (const sample of this._samples) {
-                this._bytes -= sample.bytes;
-                ++removes;
-                this._time = sample.time;
-                if (sample.clip) {
-                    break;
-                }
-            }
-            this._samples.splice(0, removes);
+        if (this._window.length === 0) {
+            return this;
         }
-        const lastSample = this._samples[this._samples.length - 1];
-        if (lastSample) {
-            lastSample.clip = true;
-            this._clip = true;
-        }
+
+        const lastTime = this._window[this._window.length - 1].time;
+        this._window = this._window.filter(sample => sample.time >= lastTime);
+        this._totalBytes = this._window.reduce((sum, sample) => sum + sample.bytes, 0);
         return this;
     }
 
-    private updateSamples(now = Util.time()) {
-        // Remove obsolete sample
-        const timeOK = now - this._interval;
-        let removes = 0;
-        let sample;
-        while (this._time < timeOK && (sample = this._samples[removes])) {
-            this._bytes -= sample.bytes;
-            if (sample.clip) {
-                this._clip = sample.clip = false;
-            }
-            if (sample.time > timeOK) {
-                // only a part of the sample to delete !
-                sample.bytes *= (sample.time - timeOK) / (sample.time - this._time);
-                this._time = timeOK;
-                this._bytes += sample.bytes;
-                break;
-            }
-            ++removes;
-            this._time = sample.time;
-        }
+    private _updateWindow() {
+        const now = Util.time();
+        const cutoff = now - this._interval;
 
-        this._samples.splice(0, removes);
-        return this._samples;
+        // Remove samples outside the window
+        while (this._window.length > 0 && this._window[0].time < cutoff) {
+            this._totalBytes -= this._window[0].bytes;
+            this._window.shift();
+        }
     }
 }
