@@ -111,9 +111,16 @@ export class UIMetrics {
     private _legendFontSize: number;
     private _stepSize: number;
     private _ranges: { [key: string]: { min: number; max: number } };
+    private _mouseX?: number;
 
     constructor(ui: HTMLElement) {
         this._ui = ui;
+        ui.addEventListener('mousemove', (event: MouseEvent) => {
+            this._mouseX = event.offsetX;
+        });
+        ui.addEventListener('mouseleave', (event: MouseEvent) => {
+            this._mouseX = undefined;
+        });
         // default values in pixels
         this._lineHeight = 40;
         this._labelWidth = 170;
@@ -207,6 +214,8 @@ export class UIMetrics {
 
             let minCircle = '';
             let maxCircle = '';
+
+            let mouseCircle = this._mouseX == null || this._mouseX > x ? null : '';
             for (let i = 0; i < values.length; ++i) {
                 x -= this._stepSize;
                 const value = parseFloat(values[i].toString());
@@ -216,6 +225,9 @@ export class UIMetrics {
                     maxCircle = maxCircle || this._drawCircle(x, y, value);
                 } else if (value === max) {
                     minCircle = minCircle || this._drawCircle(x, y, value);
+                }
+                if (mouseCircle === '' && x <= (this._mouseX || 0)) {
+                    mouseCircle = this._drawCircle(x, y, value, 'blue', '');
                 }
             }
 
@@ -234,7 +246,10 @@ export class UIMetrics {
             this._html += '<tspan x="' + (width + averageCenter) + '" dy="1em">±' + average + '</tspan>';
             this._html += '</text>';
 
-            this._html += minCircle + maxCircle;
+            this._html += minCircle + maxCircle + (mouseCircle ?? '');
+            if (mouseCircle) {
+                this._html += mouseCircle;
+            }
             this._html += '</svg>';
         }
         requestAnimationFrame(() => {
@@ -245,8 +260,8 @@ export class UIMetrics {
         });
     }
 
-    private _drawCircle(x: number, y: number, value: number) {
-        let circle = '<circle cx="' + x + '" cy="' + y + '" r="2" fill="green" />';
+    private _drawCircle(x: number, y: number, value: number, color = 'green', fontStyle = 'italic') {
+        let circle = '<circle cx="' + x + '" cy="' + y + '" r="2" fill="' + color + '" />';
         const legendFontHeight = 0.7 * this._legendFontSize;
         const graphMiddle = Math.round(this._lineHeight / 2);
         if (y < graphMiddle) {
@@ -257,7 +272,9 @@ export class UIMetrics {
             y -= this.textMargin;
         }
         circle +=
-            '<text font-style="italic" font-size="' +
+            '<text font-style="' +
+            fontStyle +
+            '" font-size="' +
             this._legendFontSize +
             '" x="' +
             (x - this._legendFontSize) +
