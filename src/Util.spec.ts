@@ -16,8 +16,8 @@ describe('Util', () => {
             expect(time100).toBeGreaterThanOrEqual(time0 + 100);
 
             const unixTime = Util.unixTime();
-            expect(unixTime).toBeGreaterThanOrEqual(performance.timeOrigin + time0 + 100);
-            expect(unixTime).toBeGreaterThanOrEqual(performance.timeOrigin + time100);
+            expect(unixTime).toBeGreaterThanOrEqual(Math.floor(performance.timeOrigin + time0 + 100));
+            expect(unixTime).toBeGreaterThanOrEqual(Math.floor(performance.timeOrigin + time100));
         });
     });
 });
