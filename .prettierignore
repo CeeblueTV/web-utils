@@ -2,7 +2,8 @@ package-lock.json
 .github
 node_modules
 dist
-
+.codecov.yml
+coverage
 # OS
 .DS_Store
 

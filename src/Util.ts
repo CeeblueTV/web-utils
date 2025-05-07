@@ -23,17 +23,26 @@ const _perf = performance; // to increase x10 now performance!
 export const EMPTY_FUNCTION = () => {};
 
 /**
- * Efficient and high resolution timestamp in milliseconds elapsed since {@link Util.timeOrigin}
+ * Returns an efficient timestamp in milliseconds elapsed since {@link performance.timeOrigin},
+ * representing the start of the current JavaScript execution context.
+ *
+ * Note: Each Web Worker runs in a separate JS context, so timestamps
+ * are not directly comparable between different workers. Use {@link unixTime}
+ * for comparable timestamps across different Web Workers.
  */
 export function time(): number {
     return Math.floor(_perf.now());
 }
 
 /**
- * Time origin represents the time when the application has started
+ * Returns an efficient Unix timestamp in milliseconds.
+ *
+ * Unix timestamps are universally comparable across different JavaScript
+ * contexts (e.g., Web Workers), as they reference the number of milliseconds
+ * elapsed since January 1, 1970 (UNIX epoch).
  */
-export function timeOrigin(): number {
-    return Math.floor(_perf.now() + _perf.timeOrigin);
+export function unixTime(): number {
+    return Math.floor(_perf.timeOrigin + _perf.now());
 }
 
 /**
