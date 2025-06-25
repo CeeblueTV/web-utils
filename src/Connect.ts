@@ -58,7 +58,7 @@ export type Params = {
      * If `endPoint` is a complete URL and `streamName` is not provided, {@link buildURL} will set this parameter automatically
      * using the second part of the URL's path (the first part being the protocol name), or the first path if no other part exists.
      */
-    streamName: string;
+    streamName?: string;
     /**
      * Optional access token to use to join a private stream
      */
@@ -107,6 +107,18 @@ export enum Type {
  */
 export function defineMediaExt(type: Type, params: Params) {
     // Compute appropriate mediaExt out parameter
+    if (!params.mediaExt) {
+        try {
+            const url = new URL(params.endPoint);
+            // Set mediaExt with ?ext= param when set OR url extension
+            params.mediaExt = url.searchParams.get('ext') ?? Util.getExtension(Util.getFile(url.pathname));
+        } catch (_) {
+            // not an URL, it's only a host
+            params.mediaExt = '';
+        }
+    }
+    // Fix mediaExt in removing the possible '.' prefix
+    params.mediaExt = Util.trimStart(params.mediaExt, '.');
     switch (type) {
         case Type.HESP:
             params.mediaExt = 'mp4';
@@ -115,18 +127,8 @@ export function defineMediaExt(type: Type, params: Params) {
             params.mediaExt = 'rtp';
             break;
         case Type.WRTS: {
-            try {
-                const url = new URL(params.endPoint);
-                const ext = Util.getExtension(Util.getFile(url.pathname));
-                // set extension just if not json, json means a manifest file endPoint
-                if (ext && ext.toLowerCase() !== '.json') {
-                    params.mediaExt = ext;
-                }
-            } catch (_) {
-                // not an URL, it's only a host => keep mediaExt unchanged to build the URL
-            }
-            if (!params.mediaExt) {
-                // set to its default rts value => always set for WRTS!
+            // json means a manifest file endPoint, replace with default rts media extension
+            if (!params.mediaExt || params.mediaExt.toLowerCase() === 'json') {
                 params.mediaExt = 'rts';
             }
             break;
@@ -138,12 +140,9 @@ export function defineMediaExt(type: Type, params: Params) {
             params.mediaExt = 'json';
             break;
         default:
-            params.mediaExt = ''; // set always a value to know that the parameters have been fixed
             console.warn('Unknown params type ' + type);
             break;
     }
-    // Fix mediaExt in removing the possible '.' prefix
-    params.mediaExt = Util.trimStart(params.mediaExt, '.');
 }
 
 /**
