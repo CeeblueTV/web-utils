@@ -113,7 +113,7 @@ export function defineMediaExt(type: Type, params: Params) {
             // Set mediaExt with ?ext= param when set OR url extension
             params.mediaExt = url.searchParams.get('ext') ?? Util.getExtension(Util.getFile(url.pathname));
         } catch (_) {
-            // not an URL, it's only a host => keep mediaExt unchanged to build the URL
+            // not an URL, it's only a host
             params.mediaExt = '';
         }
     }
