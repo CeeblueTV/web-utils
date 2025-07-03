@@ -292,6 +292,38 @@ export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promi
 }
 
 /**
+ * fetch help method with few usefull fix:
+ * - throw an string exception if response code is not 200 with the text of the response or uses statusText
+ * - measure the rtt of fetching and returns it in the property Response.rtt (guaranteed to be ≥ 1),
+ *  supports subtracting server processing time using either the Response-Delay or CMSD-rd header when available
+ */
+export async function fetchWithRTT(input: RequestInfo | URL, init?: RequestInit): Promise<Response & { rtt: number }> {
+    // a first HEAD request to garantie a connection
+    await fetch(input, { ...init, method: 'HEAD' });
+    // the true request
+    const startTime = time();
+    const response = (await fetch(input, init)) as Response & { rtt: number };
+    response.rtt = time() - startTime;
+    // remove the ResponseDelay if indicated by the server
+    let responseDelay = Number(response.headers.get('Response-Delay')) || 0;
+    if (!responseDelay) {
+        // search if we have a CMSD info?
+        // cmsd-dynamic "fly";rd=1
+        const cmsd = response.headers.get('cmsd-dynamic');
+        if (cmsd) {
+            for (const param of cmsd.split(';')) {
+                const [name, value] = param.split('=');
+                if (name.trim().toLowerCase() === 'rd') {
+                    responseDelay = Number(value) || responseDelay;
+                }
+            }
+        }
+    }
+    response.rtt = Math.max(1, response.rtt - responseDelay);
+    return response;
+}
+
+/**
  * Get Extension part from path
  * @param path path to parse
  * @returns the extension
