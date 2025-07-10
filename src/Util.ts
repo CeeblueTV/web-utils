@@ -319,7 +319,7 @@ export function equal(a: any, b: any, seen = new WeakMap()): boolean {
     }
 
     // 7. Generic object : keys + symbols
-    const keysA = [...Object.keys(a), ...(Object.getOwnPropertySymbols(a) as any)];
+    const keysA = [...Object.keys(a), ...Object.getOwnPropertySymbols(a)];
     if (keysA.length !== Object.keys(b).length + Object.getOwnPropertySymbols(b).length) {
         return false;
     }
