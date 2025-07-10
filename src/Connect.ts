@@ -5,6 +5,7 @@
  */
 import * as Util from './Util';
 import { NetAddress } from './NetAddress';
+import { log } from './Log';
 
 /**
  * Parameters of a key system for encrypted streams (DRM)
@@ -140,7 +141,7 @@ export function defineMediaExt(type: Type, params: Params) {
             params.mediaExt = 'json';
             break;
         default:
-            console.warn('Unknown params type ' + type);
+            log('Unknown params type ' + type).warn();
             break;
     }
 }
@@ -177,7 +178,7 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
                 url.pathname = '/' + params.streamName + '.json';
                 break;
             default:
-                console.warn('Unknown url type ' + type);
+                log('Unknown url type ' + type).warn();
                 break;
         }
     } else {
