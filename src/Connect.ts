@@ -118,8 +118,8 @@ export function defineMediaExt(type: Type, params: Params) {
             params.mediaExt = '';
         }
     }
-    // Fix mediaExt in removing the possible '.' prefix
-    params.mediaExt = Util.trimStart(params.mediaExt, '.');
+    // Normalize mediaExt in removing the possible '.' prefix and change it to lower case
+    params.mediaExt = Util.trimStart(params.mediaExt, '.').toLowerCase();
     switch (type) {
         case Type.HESP:
             params.mediaExt = 'mp4';
@@ -129,7 +129,7 @@ export function defineMediaExt(type: Type, params: Params) {
             break;
         case Type.WRTS: {
             // json means a manifest file endPoint, replace with default rts media extension
-            if (!params.mediaExt || params.mediaExt.toLowerCase() === 'json') {
+            if (!params.mediaExt || params.mediaExt === 'json') {
                 params.mediaExt = 'rts';
             }
             break;
