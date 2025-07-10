@@ -21,6 +21,149 @@ describe('Util', () => {
         });
     });
 
+    describe('options', () => {
+        it('should parse URL search params', () => {
+            const params = Util.options('?key=value&number=123&boolean=true');
+            expect(params).toEqual({
+                key: 'value',
+                number: 123,
+                boolean: true
+            });
+        });
+
+        it('should handle URL object', () => {
+            const url = new URL('http://example.com?key=value');
+            const params = Util.options(url);
+            expect(params).toEqual({ key: 'value' });
+        });
+
+        it('should handle URLSearchParams object', () => {
+            const searchParams = new URLSearchParams('key=value');
+            const params = Util.options(searchParams);
+            expect(params).toEqual({ key: 'value' });
+        });
+
+        it('should handle empty input', () => {
+            const params = Util.options('');
+            expect(params).toEqual({});
+
+            const params2 = Util.options('http://example.com?');
+            expect(params2).toEqual({});
+
+            const params3 = Util.options('http://example.com');
+            expect(params3).toEqual({});
+        });
+
+        it('should handle object input', () => {
+            const params = Util.options({ key: 'value' });
+            expect(params).toEqual({ key: 'value' });
+        });
+    });
+
+    describe('toBin', () => {
+        it('should convert string to UTF-8 representation in Uint8Array', () => {
+            const str = 'Hello 😭';
+            const bin = Util.toBin(str);
+            // UTF-8
+            expect(bin).to.be.deep.equal(new Uint8Array([72, 101, 108, 108, 111, 32, 240, 159, 152, 173]));
+        });
+
+        it('should return empty array for empty string', () => {
+            const bin = Util.toBin('');
+            expect(bin).to.be.deep.equal(new Uint8Array());
+        });
+    });
+
+    describe('safePromise', () => {
+        it('should resolve before timeout', async () => {
+            const promise = new Promise(resolve => setTimeout(() => resolve('success'), 100));
+            const result = await Util.safePromise(200, promise);
+            expect(result).toBe('success');
+        });
+
+        // it('should reject after timeout', async () => {
+        //     const promise = new Promise(resolve => setTimeout(() => resolve('success'), 200));
+        //     await expect(Util.safePromise(100, promise)).rejects.toThrow(Error);
+        // });
+    });
+
+    describe('sleep', () => {
+        it('should wait for specified time', async () => {
+            const start = Date.now();
+            await Util.sleep(102); // 100 + 2ms to avoid flaky tests
+            const duration = Date.now() - start;
+            expect(duration).toBeGreaterThanOrEqual(100);
+        });
+    });
+
+    describe('equal', () => {
+        it('should compare primitive values', () => {
+            expect(Util.equal(1, 1)).toBe(true);
+            expect(Util.equal('a', 'a')).toBe(true);
+            expect(Util.equal(true, true)).toBe(true);
+            // Null and undefined
+            expect(Util.equal(null, null)).toBe(true);
+            expect(Util.equal(undefined, undefined)).toBe(true);
+            // NaN and infinites
+            expect(Util.equal(NaN, NaN)).toBe(true);
+            expect(Util.equal(Infinity, Infinity)).toBe(true);
+            expect(Util.equal(-Infinity, -Infinity)).toBe(true);
+            // Differents
+            expect(Util.equal(0, null)).toBe(false);
+            expect(Util.equal(0, undefined)).toBe(false);
+            expect(Util.equal(0, NaN)).toBe(false);
+            expect(Util.equal(0, Infinity)).toBe(false);
+            expect(Util.equal(0, -Infinity)).toBe(false);
+            expect(Util.equal(0, '0')).toBe(false);
+            expect(Util.equal(null, undefined)).toBe(false);
+        });
+
+        it('should compare arrays', () => {
+            expect(Util.equal([], [])).toBe(true);
+            expect(Util.equal([1, 2, 3], [1, 2, 3])).toBe(true);
+            expect(Util.equal([1, 2], [1, 2, 3])).toBe(false);
+            expect(Util.equal([1, 2, 3], [1, 2, 4])).toBe(false);
+            expect(Util.equal([null, undefined, NaN], [null, undefined, NaN])).toBe(true);
+        });
+
+        it('should compare plain objects', () => {
+            expect(Util.equal({}, {})).toBe(true);
+            expect(Util.equal({ a: 1 }, { a: 1 })).toBe(true);
+            expect(Util.equal({ a: 1 }, { a: 2 })).toBe(false);
+        });
+
+        it('should compare nested structures', () => {
+            expect(
+                Util.equal(
+                    {
+                        foo: [1, { bar: 'baz' }, [null, NaN]],
+                        qux: { nested: { deep: 42 } }
+                    },
+                    {
+                        foo: [1, { bar: 'baz' }, [null, NaN]],
+                        qux: { nested: { deep: 42 } }
+                    }
+                )
+            ).toBe(true);
+        });
+
+        it('should return false when object keys differ in one direction', () => {
+            expect(Util.equal({ a: 1 }, { a: 1, b: 2 })).toBe(false);
+            expect(Util.equal({ a: 1, b: 2 }, { a: 1 })).toBe(false);
+        });
+
+        it('should consider different shapes not equal', () => {
+            // Object with length ≠ array
+            expect(Util.equal({ length: 0 }, [])).toBe(false);
+            // Array ≠ objet
+            expect(Util.equal([], {})).toBe(false);
+        });
+
+        it('should handle deeply mismatched structures', () => {
+            expect(Util.equal({ x: [1, 2, { y: 3 }] }, { x: [1, 2, { y: 4 }] })).toBe(false);
+        });
+    });
+
     describe('fetch', () => {
         const realFetch = global.fetch;
         afterEach(() => {
@@ -58,6 +201,50 @@ describe('Util', () => {
 
         it('should throw on error response', async () => {
             await expect(Util.fetch('https://¤.com')).rejects.toThrow(Error);
+
+            describe('path functions', () => {
+                it('should get extension from path', () => {
+                    expect(Util.getExtension('file.txt')).toBe('.txt');
+                    expect(Util.getExtension('path/to/file.txt')).toBe('.txt');
+                    expect(Util.getExtension('file')).toBe('');
+                    expect(Util.getExtension('path/to/file.txt')).toBe('.txt');
+                    expect(Util.getExtension('path/to/.txt')).toBe('.txt');
+                    expect(Util.getExtension('.txt')).toBe('.txt');
+                    expect(Util.getExtension('path/to/file.txt.')).toBe('.');
+                });
+
+                it('should get file from path', () => {
+                    expect(Util.getFile('file.txt')).toBe('file.txt');
+                    expect(Util.getFile('path/to/file.txt')).toBe('file.txt');
+                });
+
+                it('should get base file without extension', () => {
+                    expect(Util.getBaseFile('file.txt')).toBe('file');
+                    expect(Util.getBaseFile('path/to/file.txt')).toBe('file');
+                    expect(Util.getBaseFile('file')).toBe('file');
+                });
+            });
+
+            describe('string trim functions', () => {
+                it('should trim spaces', () => {
+                    expect(Util.trim('  hello  ')).toBe('hello');
+                });
+
+                it('should trim custom characters', () => {
+                    expect(Util.trim('xxhelloxx', 'x')).toBe('hello');
+                    expect(Util.trim('xxhello😭xx', 'x😭')).toBe('hello');
+                });
+
+                it('should trim start only', () => {
+                    expect(Util.trimStart('  hello  ')).toBe('hello  ');
+                    expect(Util.trimStart('😭hello😭', '😭')).toBe('hello😭');
+                });
+
+                it('should trim end only', () => {
+                    expect(Util.trimEnd('  hello  ')).toBe('  hello');
+                    expect(Util.trimEnd('😭hello😭', '😭')).toBe('😭hello');
+                });
+            });
         });
     });
 });
