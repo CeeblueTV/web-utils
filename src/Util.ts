@@ -279,30 +279,33 @@ export function equal(a: any, b: any) {
  * fetch help method with few usefull fix:
  * - throw an string exception if response code is not 200 with the text of the response or uses statusText
  */
-export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const response = await self.fetch(input, init);
-    if (response.status >= 300) {
-        let error;
+export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response & { error?: string }> {
+    const response = (await self.fetch(input, init)) as Response & { error?: string };
+    if (!response.ok) {
         if (response.body) {
-            error = await response.text();
+            response.error = await response.text();
         }
-        throw (error || response.statusText || response.status).toString();
+        if (!response.error) {
+            response.error = response.statusText || response.status.toString() || 'Unknown error';
+        }
     }
     return response;
 }
 
 /**
- * fetch help method with few usefull fix:
- * - throw an string exception if response code is not 200 with the text of the response or uses statusText
- * - measure the rtt of fetching and returns it in the property Response.rtt (guaranteed to be ≥ 1),
- *  supports subtracting server processing time using either the Response-Delay or CMSD-rd header when available
+ * Fetch help method adding an explicit error property when Response is NOK, with the more accurate textual error inside
+ * Also measure the rtt of fetching and returns it in the property Response.rtt (guaranteed to be ≥ 1),
+ * supports subtracting server processing time using either the Response-Delay or CMSD-rd header when available
  */
-export async function fetchWithRTT(input: RequestInfo | URL, init?: RequestInit): Promise<Response & { rtt: number }> {
-    // a first HEAD request to garantie a connection
+export async function fetchWithRTT(
+    input: RequestInfo | URL,
+    init?: RequestInit
+): Promise<Response & { rtt: number; error?: string }> {
+    // a first HEAD request to try to ensure a connection
     await fetch(input, { ...init, method: 'HEAD' });
     // the true request
     const startTime = time();
-    const response = (await fetch(input, init)) as Response & { rtt: number };
+    const response = (await fetch(input, init)) as Response & { rtt: number; error?: string };
     response.rtt = time() - startTime;
     // remove the ResponseDelay if indicated by the server
     let responseDelay = Number(response.headers.get('Response-Delay')) || 0;
