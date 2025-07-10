@@ -240,54 +240,144 @@ export function safePromise<T>(timeout: number, promise: Promise<T>) {
 /**
  * Wait in milliseconds, requires a call with await keyword!
  */
-export function sleep(ms: number) {
+export async function sleep(ms: number) {
     return new Promise(resolve => {
         setTimeout(resolve, ms);
     });
 }
 
 /**
- * Test equality between two value whatever their type, array included
+ * Test equality between two value whatever their type, object and array included
  */
-export function equal(a: any, b: any) {
-    if (Object(a) !== a) {
-        if (Object(b) === b) {
-            return false;
-        }
-        // both primitive (null and undefined included)
-        return a === b;
+export function equal(a: any, b: any, seen = new WeakMap()): boolean {
+    // 1. Check primitve identiy or NaN
+    if (a === b) {
+        return true;
     }
-    // complexe object
-    if (a[Symbol.iterator]) {
-        if (!b[Symbol.iterator]) {
+    if (Number.isNaN(a) && Number.isNaN(b)) {
+        return true;
+    }
+
+    // 2. Check the both are complexe object
+    if (Object(a) !== a || Object(b) !== b) {
+        return false;
+    }
+
+    // 3. Catch circular reference
+    if (seen.has(a)) {
+        return seen.get(a) === b;
+    }
+    seen.set(a, b);
+
+    // 4. Check « toStringTag » (Date, RegExp, Map, Set…)
+    const tagA = Object.prototype.toString.call(a);
+    if (tagA !== Object.prototype.toString.call(b)) {
+        return false;
+    }
+
+    // 5. Special Case
+    switch (tagA) {
+        case '[object Date]':
+            return a.getTime() === b.getTime();
+        case '[object RegExp]':
+            return a.source === b.source && a.flags === b.flags;
+        case '[object Set]':
+        case '[object Map]': {
+            if (a.size !== b.size) {
+                return false;
+            }
+            const aKeys = a.keys();
+            const bKeys = a.keys();
+            const aValues = a.values();
+            const bValues = b.values();
+            let aKey;
+            while (!(aKey = aKeys.next()).done) {
+                if (!equal(aKey.value, bKeys.next().value)) {
+                    return false;
+                }
+                const aValue = aValues.next().value;
+                const bValue = bValues.next().value;
+                if (aValue !== aKey && !equal(aValue, bValue)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    // 6. Arrays
+    if (Array.isArray(a)) {
+        if (!Array.isArray(b) || a.length !== b.length) {
             return false;
         }
-        if (a.length !== b.length) {
-            return false;
-        }
-        for (let i = 0; i !== a.length; ++i) {
-            if (a[i] !== b[i]) {
+        for (let i = 0; i < a.length; i++) {
+            if (!equal(a[i], b[i], seen)) {
                 return false;
             }
         }
         return true;
     }
-    return a === b;
+
+    // 7. Generic object : keys + symbols
+    const keysA = [...Object.keys(a), ...Object.getOwnPropertySymbols(a)];
+    if (keysA.length !== Object.keys(b).length + Object.getOwnPropertySymbols(b).length) {
+        return false;
+    }
+    for (const key of keysA) {
+        if (!equal(a[key], b[key], seen)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /**
- * fetch help method with few usefull fix:
- * - throw an string exception if response code is not 200 with the text of the response or uses statusText
+ * Fetch help method adding an explicit error property when Response is NOK, with the more accurate textual error inside
  */
-export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const response = await self.fetch(input, init);
-    if (response.status >= 300) {
-        let error;
+export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response & { error?: string }> {
+    const response = (await self.fetch(input, init)) as Response & { error?: string };
+    if (!response.ok) {
         if (response.body) {
-            error = await response.text();
+            response.error = await response.text();
         }
-        throw (error || response.statusText || response.status).toString();
+        if (!response.error) {
+            response.error = response.statusText || response.status.toString() || 'Unknown error';
+        }
     }
+    return response;
+}
+
+/**
+ * Fetch help method adding an explicit error property when Response is NOK, with the more accurate textual error inside
+ * Also measure the rtt of fetching and returns it in the property Response.rtt (guaranteed to be ≥ 1),
+ * supports subtracting server processing time using either the Response-Delay or CMSD-rd header when available
+ */
+export async function fetchWithRTT(
+    input: RequestInfo | URL,
+    init?: RequestInit
+): Promise<Response & { rtt: number; error?: string }> {
+    // a first HEAD request to try to ensure a connection
+    await fetch(input, { ...init, method: 'HEAD' });
+    // the true request
+    const startTime = time();
+    const response = (await fetch(input, init)) as Response & { rtt: number; error?: string };
+    response.rtt = time() - startTime;
+    // remove the ResponseDelay if indicated by the server
+    let responseDelay = Number(response.headers.get('Response-Delay')) || 0;
+    if (!responseDelay) {
+        // search if we have a CMSD info?
+        // cmsd-dynamic "fly";rd=1
+        const cmsd = response.headers.get('cmsd-dynamic');
+        if (cmsd) {
+            for (const param of cmsd.split(';')) {
+                const [name, value] = param.split('=');
+                if (name.trim().toLowerCase() === 'rd') {
+                    responseDelay = Number(value) || responseDelay;
+                }
+            }
+        }
+    }
+    response.rtt = Math.max(1, response.rtt - responseDelay);
     return response;
 }
 

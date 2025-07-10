@@ -39,6 +39,16 @@ describe('Connect', () => {
             expect(params.mediaExt).toBe('rts'); // Default value
         });
 
+        it('should set media extension to MP4', () => {
+            const params: Params = { endPoint: 'https://example.com/media.mp4' };
+            defineMediaExt(Type.WRTS, params);
+            expect(params.mediaExt).toBe('mp4'); // Default value
+
+            params.endPoint = 'https://example.com/media.rts?ext=mp4';
+            defineMediaExt(Type.WRTS, params);
+            expect(params.mediaExt).toBe('mp4'); // Default value
+        });
+
         it('should set correct media extension for META', () => {
             const params: Params = { endPoint: 'example.com', streamName: 'test' };
             defineMediaExt(Type.META, params);
