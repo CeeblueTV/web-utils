@@ -132,6 +132,64 @@ describe('Util', () => {
             expect(Util.equal({ a: 1 }, { a: 2 })).toBe(false);
         });
 
+        it('should compare Map object', () => {
+            expect(
+                Util.equal(
+                    new Map([
+                        ['key1', '1'],
+                        ['key2', '2']
+                    ]),
+                    new Map([
+                        ['key1', '1'],
+                        ['key2', '2']
+                    ])
+                )
+            ).toBe(true);
+            expect(
+                Util.equal(
+                    new Map([
+                        ['key1', '1'],
+                        ['key2', '2']
+                    ]),
+                    new Map([
+                        ['key1', '1'],
+                        ['key2', '3']
+                    ])
+                )
+            ).toBe(false);
+            expect(
+                Util.equal(
+                    new Map([
+                        ['key1', [1, 2]],
+                        ['key2', [1, 2]]
+                    ]),
+                    new Map([
+                        ['key1', [1, 2]],
+                        ['key2', [1, 2]]
+                    ])
+                )
+            ).toBe(true);
+            expect(
+                Util.equal(
+                    new Map([
+                        ['key1', [1, 2]],
+                        ['key2', [1, 2]]
+                    ]),
+                    new Map([
+                        ['key1', [1, 2]],
+                        ['key2', [1, 3]]
+                    ])
+                )
+            ).toBe(false);
+        });
+
+        it('should compare Set object', () => {
+            expect(Util.equal(new Set(['key1', 'key2']), new Set(['key1', 'key2']))).toBe(true);
+            expect(Util.equal(new Set(['key1', 'key2']), new Set(['key1', 'key3']))).toBe(false);
+            expect(Util.equal(new Set([[1, 2]]), new Set([[1, 2]]))).toBe(true);
+            expect(Util.equal(new Set([[1, 2]]), new Set([[1, 3]]))).toBe(false);
+        });
+
         it('should compare nested structures', () => {
             expect(
                 Util.equal(

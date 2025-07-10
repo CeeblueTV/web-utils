@@ -247,7 +247,7 @@ export async function sleep(ms: number) {
 }
 
 /**
- * Test equality between two value whatever their type, array included
+ * Test equality between two value whatever their type, object and array included
  */
 export function equal(a: any, b: any, seen = new WeakMap()): boolean {
     // 1. Check primitve identiy or NaN
@@ -263,7 +263,7 @@ export function equal(a: any, b: any, seen = new WeakMap()): boolean {
         return false;
     }
 
-    // 3. Gestion des références circulaires
+    // 3. Catch circular reference
     if (seen.has(a)) {
         return seen.get(a) === b;
     }
@@ -281,26 +281,28 @@ export function equal(a: any, b: any, seen = new WeakMap()): boolean {
             return a.getTime() === b.getTime();
         case '[object RegExp]':
             return a.source === b.source && a.flags === b.flags;
-        case '[object Map]':
-            if (a.size !== b.size) {
-                return false;
-            }
-            for (const [k, v] of a) {
-                if (!b.has(k) || !equal(v, b.get(k), seen)) {
-                    return false;
-                }
-            }
-            return true;
         case '[object Set]':
+        case '[object Map]': {
             if (a.size !== b.size) {
                 return false;
             }
-            for (const v of a) {
-                if (!b.has(v)) {
+            const aKeys = a.keys();
+            const bKeys = a.keys();
+            const aValues = a.values();
+            const bValues = b.values();
+            let aKey;
+            while (!(aKey = aKeys.next()).done) {
+                if (!equal(aKey.value, bKeys.next().value)) {
+                    return false;
+                }
+                const aValue = aValues.next().value;
+                const bValue = bValues.next().value;
+                if (aValue !== aKey && !equal(aValue, bValue)) {
                     return false;
                 }
             }
             return true;
+        }
     }
 
     // 6. Arrays
