@@ -351,14 +351,16 @@ export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promi
  * Fetch help method adding an explicit error property when Response is NOK, with the more accurate textual error inside
  * Also measure the rtt of fetching and returns it in the property Response.rtt (guaranteed to be ≥ 1),
  * supports subtracting server processing time using either the Response-Delay or CMSD-rd header when available
+ *
+ * WIP => replace the current implementation to use Resource Timing API
  */
 export async function fetchWithRTT(
     input: RequestInfo | URL,
     init?: RequestInit
 ): Promise<Response & { rtt: number; error?: string }> {
-    // a first HEAD request to try to ensure a connection
-    await fetch(input, { ...init, method: 'HEAD' });
-    // the true request
+    // A first OPTIONS request to establish a connection (keep-alive)
+    await fetch(input, { ...init, method: 'OPTIONS' });
+    // Actual RTT measurement
     const startTime = time();
     const response = (await fetch(input, init)) as Response & { rtt: number; error?: string };
     response.rtt = time() - startTime;
