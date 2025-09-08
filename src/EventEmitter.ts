@@ -125,7 +125,7 @@ export class EventEmitter extends Loggable {
      * Event subscription only one time, once time fired it's automatically unsubscribe
      * @param name Name of event without the `on` prefix (ex: `log` to `onLog` event declared)
      * @param event Subscriber Function
-     * @param options.abortSignal Optional `AbortSignal` to stop this or multiple subscriptions in same time
+     * @param options.signal Optional `AbortSignal` to stop this or multiple subscriptions in same time
      */
     once(name: EventKeys<this>, event: Function, options?: { signal?: AbortSignal }) {
         if (typeof event !== 'function') {
