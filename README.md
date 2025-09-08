@@ -32,8 +32,6 @@ import { Util, ILog } from '@ceeblue/web-utils';
 > To debug production code without modifying it, the library can use special query parameter of the main page's URL:
 > - __!cb-override-log-level__ : allows to override the log level for the entire library, see [Log.ts](./src/Log.ts) for details on handling log levels.
 
-
-
 ## Building locally
 
 1. [Clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) this repository
@@ -58,7 +56,12 @@ This monorepo also contains built-in documentation about the APIs in the library
 ```
 npm run build:docs
 ```
-You can access the documentation by opening the index.html file in the docs folder with your browser (`./docs/index.html`).
+
+Once generated, open the `index.html` file located in the `docs` folder (`./docs/index.html`) with your browser.
+
+> 📌 **NOTE**
+>
+>  An online, continuously maintained version of the latest released documentation is available at https://ceebluetv.github.io/web-utils/
 
 ## Contribution
 
