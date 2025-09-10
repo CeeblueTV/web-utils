@@ -7,14 +7,14 @@
 <pre><code class="language-javascript"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">Util</span><span class="hl-1">, </span><span class="hl-4">ILog</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@ceeblue/web-utils&#39;</span><span class="hl-1">;</span>
 </code><button>Copy</button></pre>
 <blockquote>
-<p>💡 <strong>TIP</strong></p>
+<p>[!IMPORTANT]</p>
 <p>If your project uses TypeScript, it is recommended that you set target: &quot;ES6&quot; in your configuration to match our use of ES6 features and ensure that your build will succeed (for those requiring a backward-compatible UMD version, a local build is recommended).
 Then define the &quot;moduleResolution&quot; compiler option: &quot;Node&quot; in tsconfig.json helps with import failures by ensuring that TypeScript uses the correct import resolution strategy based on the targeted Node.js version.</p>
 <pre><code class="language-json"><span class="hl-1">{</span><br/><span class="hl-1">   </span><span class="hl-5">&quot;compilerOptions&quot;</span><span class="hl-1">: {</span><br/><span class="hl-1">      </span><span class="hl-5">&quot;target&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;ES6&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-5">&quot;moduleResolution&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;Node&quot;</span><br/><span class="hl-1">   }</span><br/><span class="hl-1">}</span>
 </code><button>Copy</button></pre>
 </blockquote>
 <blockquote>
-<p>⚠️ <strong>REMARKS</strong></p>
+<p>[!TIP]</p>
 <p>To debug production code without modifying it, the library can use special query parameter of the main page&#39;s URL:</p>
 <ul>
 <li><strong>!cb-override-log-level</strong> : allows to override the log level for the entire library, see <a href="./src/Log.ts">Log.ts</a> for details on handling log levels.</li>
@@ -39,7 +39,7 @@ Then define the &quot;moduleResolution&quot; compiler option: &quot;Node&quot; i
 </code><button>Copy</button></pre>
 <p>Once generated, open the <code>index.html</code> file located in the <code>docs</code> folder (<code>./docs/index.html</code>) with your browser.</p>
 <blockquote>
-<p>📌 <strong>NOTE</strong></p>
+<p>[!NOTE]</p>
 <p> An online, continuously maintained version of the latest released documentation is available at <a href="https://ceebluetv.github.io/web-utils/">https://ceebluetv.github.io/web-utils/</a></p>
 </blockquote>
 <a id="md:contribution" class="tsd-anchor"></a><h2><a href="#md:contribution">Contribution</a></h2><p>All contributions are welcome. Please see <a href="/CONTRIBUTING.md">our contribution guide</a> for details.</p>
