@@ -14,7 +14,7 @@ Then [import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modu
  ```javascript
 import { Util, ILog } from '@ceeblue/web-utils';
 ```
-> 💡 **TIP**
+> [!IMPORTANT]
 > 
 > If your project uses TypeScript, it is recommended that you set target: "ES6" in your configuration to match our use of ES6 features and ensure that your build will succeed (for those requiring a backward-compatible UMD version, a local build is recommended).
 > Then define the "moduleResolution" compiler option: "Node" in tsconfig.json helps with import failures by ensuring that TypeScript uses the correct import resolution strategy based on the targeted Node.js version.
@@ -27,7 +27,7 @@ import { Util, ILog } from '@ceeblue/web-utils';
 >   }
 >   ```
 
-> ⚠️ **REMARKS**
+> [!TIP]
 > 
 > To debug production code without modifying it, the library can use special query parameter of the main page's URL:
 > - __!cb-override-log-level__ : allows to override the log level for the entire library, see [Log.ts](./src/Log.ts) for details on handling log levels.
@@ -59,7 +59,7 @@ npm run build:docs
 
 Once generated, open the `index.html` file located in the `docs` folder (`./docs/index.html`) with your browser.
 
-> 📌 **NOTE**
+> [!NOTE]
 >
 >  An online, continuously maintained version of the latest released documentation is available at https://ceebluetv.github.io/web-utils/
 
