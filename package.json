@@ -51,6 +51,7 @@
         "@typescript-eslint/eslint-plugin": "~6.19.0",
         "@typescript-eslint/parser": "~6.19.0",
         "@vitest/coverage-istanbul": "^3.1.1",
+        "canvas": "^3.2.0",
         "eslint": "~8.56.0",
         "eslint-plugin-headers": "~1.0.4",
         "husky": "^9.1.7",
@@ -65,7 +66,7 @@
         "typedoc": "~0.25.3",
         "typescript": "~5.2.2",
         "undici-types": "~6.3.0",
-        "vitest": "^3.1.1"
+        "vitest": "^3.2.4"
     },
     "publishConfig": {
         "access": "public"
