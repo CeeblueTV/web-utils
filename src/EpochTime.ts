@@ -50,7 +50,7 @@ export function decodeTimestamp(context: CanvasRenderingContext2D, lineWidth: nu
     const blockSize = Math.floor(lineWidth / _blocksPerRow);
     let binaryTime = '';
     if (blockSize < 1) {
-        return;
+        return null;
     }
 
     const effectiveWidth = blockSize * _blocksPerRow;
@@ -72,7 +72,7 @@ export function decodeTimestamp(context: CanvasRenderingContext2D, lineWidth: nu
             // White
             binaryTime += '0';
         } else {
-            return;
+            return null;
         }
     }
 
@@ -84,7 +84,7 @@ export function decodeTimestamp(context: CanvasRenderingContext2D, lineWidth: nu
 
     // Basic sanity checks (match encoder ranges)
     if (day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59 || millisecond > 999) {
-        return;
+        return null;
     }
 
     const now = new Date();
@@ -92,8 +92,8 @@ export function decodeTimestamp(context: CanvasRenderingContext2D, lineWidth: nu
 }
 
 /**
- * Encode the current timestamp into a line composed of blocks of black and white pixels
- * written on the top of the canvas.
+ * Encode the given date (excluding year and month) into a line composed of blocks
+ * of black and white pixels written on the top of the canvas.
  *
  * @param {CanvasRenderingContext2D} context
  * @param {Number} lineWidth width of the line in pixels
@@ -114,11 +114,11 @@ export function encodeTimestamp(
     const second = now.getUTCSeconds();
     const millisecond = now.getUTCMilliseconds();
 
-    const binaryDay = day.toString(2).padStart(5, '0');
-    const binaryHour = hour.toString(2).padStart(5, '0');
-    const binaryMinute = minute.toString(2).padStart(6, '0');
-    const binarySecond = second.toString(2).padStart(6, '0');
-    const binaryMillisecond = millisecond.toString(2).padStart(10, '0');
+    const binaryDay = day.toString(2).padStart(5, '0'); // 31 possible days/32
+    const binaryHour = hour.toString(2).padStart(5, '0'); // 24 possible hours/32
+    const binaryMinute = minute.toString(2).padStart(6, '0'); // 60 possible minutes/64
+    const binarySecond = second.toString(2).padStart(6, '0'); // 60 possible seconds/64
+    const binaryMillisecond = millisecond.toString(2).padStart(10, '0'); // 1000 possible milliseconds/1024
     const binaryTime = binaryDay + binaryHour + binaryMinute + binarySecond + binaryMillisecond;
 
     for (let i = 0; i < binaryTime.length; i++) {
