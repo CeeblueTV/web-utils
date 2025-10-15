@@ -32,9 +32,8 @@ jobs:
                   token: ${{ steps.generate_token.outputs.token }}
             - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
               with:
-                  cache: npm
                   node-version: lts/*
-            - run: npm ci
+            - run: npm ci --prefer-offline --no-audit
             - run: npx semantic-release
               env:
                   GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
