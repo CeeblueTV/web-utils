@@ -470,3 +470,27 @@ export function trimEnd(value: string, chars: string = ' '): string {
     }
     return value.substring(0, i);
 }
+
+/**
+ * Wraps an object with a Proxy that makes property access case-insensitive.
+ *
+ * Property lookup (e.g. `obj.Foo` or `obj.foo`) will resolve to the same underlying key, regardless of casing.
+ * Only affects string-based property access (not symbols).
+ *
+ * @template T
+ * @param {T} obj - The original object.
+ * @returns {T} A proxied object with case-insensitive property access.
+ */
+export function caseInsensitive<T extends Record<string, any>>(obj: any): T {
+    return new Proxy(obj, {
+        get(target, prop, receiver) {
+            if (typeof prop === 'string') {
+                const key = Object.keys(target).find(k => k.toLowerCase() === prop.toLowerCase());
+                if (key !== undefined) {
+                    return Reflect.get(target, key, receiver);
+                }
+            }
+            return Reflect.get(target, prop, receiver);
+        }
+    });
+}

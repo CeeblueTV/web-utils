@@ -305,4 +305,17 @@ describe('Util', () => {
             });
         });
     });
+
+    describe('caseInsensitive', () => {
+        it('should get the same property with different case', async () => {
+            const obj = Util.caseInsensitive({ endPoint: 'http://address', streamName: null });
+            expect(obj.endPoint).toBe('http://address');
+            expect(obj.endpoint).toBe('http://address');
+            expect(obj.endpoinT).toBe('http://address');
+            expect(obj.endpoin).toBeUndefined();
+            expect(obj.streamname).toBeNull();
+            expect(obj.STREAMNAME).toBeNull();
+            expect(obj.stream).toBeUndefined();
+        });
+    });
 });
