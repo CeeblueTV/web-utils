@@ -335,7 +335,7 @@ export function equal(a: any, b: any, seen = new WeakMap()): boolean {
  * Fetch help method adding an explicit error property when Response is NOK, with the more accurate textual error inside
  */
 export async function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response & { error?: string }> {
-    const response = (await self.fetch(input, init)) as Response & { error?: string };
+    const response = (await globalThis.fetch(input, init)) as Response & { error?: string };
     if (!response.ok) {
         if (response.body) {
             response.error = await response.text();

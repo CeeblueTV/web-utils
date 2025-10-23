@@ -1,2 +1,2 @@
 npm run build
-npx vitest run
+npm run test

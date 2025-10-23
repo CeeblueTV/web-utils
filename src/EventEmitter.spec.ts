@@ -34,7 +34,7 @@ describe('EventEmitter', () => {
 
     beforeEach(() => {
         emitter = new TestEmitter();
-        consoleSpy = vi.spyOn(console, 'log');
+        consoleSpy = vi.spyOn(console, 'log') as unknown as ReturnType<typeof vi.spyOn>;
     });
 
     describe('default event handling', () => {
@@ -46,6 +46,7 @@ describe('EventEmitter', () => {
         it('should allow overriding default handler', () => {
             const newHandler = vi.fn();
             emitter.onTest = newHandler;
+            consoleSpy.mockClear();
             emitter.triggerTest('test value');
             expect(newHandler).toHaveBeenCalledWith('test value');
             expect(consoleSpy).not.toHaveBeenCalled();
