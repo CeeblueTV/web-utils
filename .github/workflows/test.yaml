@@ -1,0 +1,99 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }} - ${{ matrix.browser }})
+    continue-on-error: true
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        browser: [chrome, firefox, edge, safari, nodejs]
+        include:
+          - os: ubuntu-latest
+            browser: chrome
+          - os: ubuntu-latest
+            browser: firefox
+          - os: ubuntu-latest
+            browser: nodejs
+          - os: windows-latest
+            browser: chrome
+          - os: windows-latest
+            browser: edge
+          - os: macos-latest
+            browser: safari
+        exclude:
+          - os: ubuntu-latest
+            browser: edge
+          - os: ubuntu-latest
+            browser: safari
+          - os: windows-latest
+            browser: firefox
+          - os: windows-latest
+            browser: safari
+          - os: windows-latest
+            browser: nodejs
+          - os: macos-latest
+            browser: chrome
+          - os: macos-latest
+            browser: firefox
+          - os: macos-latest
+            browser: edge
+          - os: macos-latest
+            browser: nodejs
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '25.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        shell: bash
+        run: |
+          if [ "${{ matrix.browser }}" = "nodejs" ]; then
+            npm run test
+          else
+            npm run test:${{ matrix.browser }}
+          fi
+        env:
+          TEST_HEADLESS: ${{ matrix.browser != 'safari' }}
+
+  codecov-chrome-linux:
+    name: codecov (Chrome Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '25.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

@@ -9,11 +9,6 @@ coverage:
         target: 90%
         threshold: 10%
 
-comment:
-  layout: "reach, diff, flags, files"
-  behavior: default
-  require_changes: true
-
 ignore:
   - "**/*.test.ts"
   - "**/*.spec.ts"

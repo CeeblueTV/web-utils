@@ -166,7 +166,7 @@ describe('Connect', () => {
 
         it('Should throw an error if the URL is invalid', () => {
             const params: Params = {
-                endPoint: 'not a valid url',
+                endPoint: '::not a valid url',
                 streamName: 'test'
             };
             expect(() => buildURL(Type.HESP, params)).toThrow(Error);

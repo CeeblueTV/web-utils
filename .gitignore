@@ -1,3 +1,4 @@
+scripts/run-lambdatest.secrets.json
 node_modules/
 dist/
 docs/**/*.html
@@ -18,3 +19,10 @@ coverage/
 *.sublime-project
 *.tmproj
 .vscode/
+
+# Test
+__screenshots__
+coverage
+*.log
+run-lambdatest.prefs.json
+.lambdatest
