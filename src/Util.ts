@@ -477,11 +477,10 @@ export function trimEnd(value: string, chars: string = ' '): string {
  * Property lookup (e.g. `obj.Foo` or `obj.foo`) will resolve to the same underlying key, regardless of casing.
  * Only affects string-based property access (not symbols).
  *
- * @template T
- * @param {T} obj - The original object.
- * @returns {T} A proxied object with case-insensitive property access.
+ * @param obj - The original object.
+ * @returns A proxied object with case-insensitive property access.
  */
-export function caseInsensitive<T extends Record<string, any>>(obj: any): T {
+export function caseInsensitive(obj: any): Record<string, any> {
     return new Proxy(obj, {
         get(target, prop, receiver) {
             if (typeof prop === 'string') {

@@ -259,50 +259,50 @@ describe('Util', () => {
 
         it('should throw on error response', async () => {
             await expect(Util.fetch('https://¤.com')).rejects.toThrow(Error);
+        });
+    });
 
-            describe('path functions', () => {
-                it('should get extension from path', () => {
-                    expect(Util.getExtension('file.txt')).toBe('.txt');
-                    expect(Util.getExtension('path/to/file.txt')).toBe('.txt');
-                    expect(Util.getExtension('file')).toBe('');
-                    expect(Util.getExtension('path/to/file.txt')).toBe('.txt');
-                    expect(Util.getExtension('path/to/.txt')).toBe('.txt');
-                    expect(Util.getExtension('.txt')).toBe('.txt');
-                    expect(Util.getExtension('path/to/file.txt.')).toBe('.');
-                });
+    describe('path functions', () => {
+        it('should get extension from path', () => {
+            expect(Util.getExtension('file.txt')).toBe('.txt');
+            expect(Util.getExtension('path/to/file.txt')).toBe('.txt');
+            expect(Util.getExtension('file')).toBe('');
+            expect(Util.getExtension('path/to/file.txt')).toBe('.txt');
+            expect(Util.getExtension('path/to/.txt')).toBe('.txt');
+            expect(Util.getExtension('.txt')).toBe('.txt');
+            expect(Util.getExtension('path/to/file.txt.')).toBe('.');
+        });
 
-                it('should get file from path', () => {
-                    expect(Util.getFile('file.txt')).toBe('file.txt');
-                    expect(Util.getFile('path/to/file.txt')).toBe('file.txt');
-                });
+        it('should get file from path', () => {
+            expect(Util.getFile('file.txt')).toBe('file.txt');
+            expect(Util.getFile('path/to/file.txt')).toBe('file.txt');
+        });
 
-                it('should get base file without extension', () => {
-                    expect(Util.getBaseFile('file.txt')).toBe('file');
-                    expect(Util.getBaseFile('path/to/file.txt')).toBe('file');
-                    expect(Util.getBaseFile('file')).toBe('file');
-                });
-            });
+        it('should get base file without extension', () => {
+            expect(Util.getBaseFile('file.txt')).toBe('file');
+            expect(Util.getBaseFile('path/to/file.txt')).toBe('file');
+            expect(Util.getBaseFile('file')).toBe('file');
+        });
+    });
 
-            describe('string trim functions', () => {
-                it('should trim spaces', () => {
-                    expect(Util.trim('  hello  ')).toBe('hello');
-                });
+    describe('string trim functions', () => {
+        it('should trim spaces', () => {
+            expect(Util.trim('  hello  ')).toBe('hello');
+        });
 
-                it('should trim custom characters', () => {
-                    expect(Util.trim('xxhelloxx', 'x')).toBe('hello');
-                    expect(Util.trim('xxhello😭xx', 'x😭')).toBe('hello');
-                });
+        it('should trim custom characters', () => {
+            expect(Util.trim('xxhelloxx', 'x')).toBe('hello');
+            expect(Util.trim('xxhello😭xx', 'x😭')).toBe('hello');
+        });
 
-                it('should trim start only', () => {
-                    expect(Util.trimStart('  hello  ')).toBe('hello  ');
-                    expect(Util.trimStart('😭hello😭', '😭')).toBe('hello😭');
-                });
+        it('should trim start only', () => {
+            expect(Util.trimStart('  hello  ')).toBe('hello  ');
+            expect(Util.trimStart('😭hello😭', '😭')).toBe('hello😭');
+        });
 
-                it('should trim end only', () => {
-                    expect(Util.trimEnd('  hello  ')).toBe('  hello');
-                    expect(Util.trimEnd('😭hello😭', '😭')).toBe('😭hello');
-                });
-            });
+        it('should trim end only', () => {
+            expect(Util.trimEnd('  hello  ')).toBe('  hello');
+            expect(Util.trimEnd('😭hello😭', '😭')).toBe('😭hello');
         });
     });
 
