@@ -28,7 +28,12 @@
         "watch": "rollup -c -w",
         "watch:es5": "rollup -c -w --format umd",
         "semantic-release": "semantic-release",
-        "prepare": "is-ci || husky install"
+        "prepare": "is-ci || simple-git-hooks"
+    },
+    "simple-git-hooks": {
+        "pre-commit": "npx lint-staged",
+        "pre-push": "npm run build",
+        "prepare-commit-msg": "npx --no -- commitlint --edit $1"
     },
     "author": "Ceeblue B.V.",
     "license": "AGPL-3.0-or-later",
@@ -55,7 +60,6 @@
         "canvas": "^3.2.0",
         "eslint": "~8.56.0",
         "eslint-plugin-headers": "~1.0.4",
-        "husky": "^9.1.7",
         "is-ci": "~3.0.0",
         "jsdom": "^26.0.0",
         "lint-staged": "~15.2.0",
@@ -63,6 +67,7 @@
         "rollup": "~3.29.3",
         "rollup-plugin-dts": "~6.0.2",
         "semantic-release": "~21.0.0",
+        "simple-git-hooks": "^2.13.1",
         "tslib": "~2.6.2",
         "typedoc": "~0.25.3",
         "typescript": "~5.2.2",
