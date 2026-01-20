@@ -19,6 +19,7 @@ export * as Util from './src/Util';
 export { WebSocketReliable, WebSocketReliableError } from './src/WebSocketReliable';
 export * as EpochTime from './src/EpochTime';
 export { LogLevel, ILog, Log, Loggable, log } from './src/Log';
+export { Cmcd, CmcdObjectType, CmcdStreamType, toCmcdHeaders, encodeCmcd } from '@svta/common-media-library';
 
 export { UIMetrics } from './src/ui/UIMetrics';
 
