@@ -28,7 +28,7 @@ export class PlayerStats {
     videoPerSecond?: number; // frame video per second, fps
     audioPerSecond?: number; // sample audio per second
 
-    // following parameters are counter
+    // following parameters are counters
     skippedVideoCount?: number; // frame video skipped
     skippedAudioCount?: number; // sample audio skipped
 
