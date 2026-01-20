@@ -20,7 +20,9 @@ export { WebSocketReliable, WebSocketReliableError } from './src/WebSocketReliab
 export * as EpochTime from './src/EpochTime';
 export { LogLevel, ILog, Log, Loggable, log } from './src/Log';
 export { PlayerStats } from './stats/PlayerStats';
-export { Cmcd, CmcdObjectType, CmcdStreamType, toCmcdHeaders, encodeCmcd } from '@svta/common-media-library';
+// Export the Common Media Library as the CML namespace.
+// Example usage: CML.Cmcd, CML.CmcdStreamingFormat, etc.
+export * as CML from '@svta/common-media-library';
 
 export { UIMetrics } from './src/ui/UIMetrics';
 

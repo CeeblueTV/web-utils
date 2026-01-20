@@ -3,7 +3,8 @@
  * This file is part of https://github.com/CeeblueTV/web-utils which is released under GNU Affero General Public License.
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
-import { Cmcd, CmcdStreamingFormat } from '@svta/common-media-library';
+
+import * as CML from '@svta/common-media-library';
 export class PlayerStats {
     protocol?: string; // protocol: HLS, DASH, WRTS, HESP, SMOOTH
     currentTime?: number; // current time in ms
@@ -38,9 +39,9 @@ export class PlayerStats {
     stallCount?: number;
 
     /**
-     * Converts players stats to Cmcd format
+     * Converts player stats to Cmcd format
      */
-    toCmcd(trackId: number, prevStats?: PlayerStats): Cmcd {
+    toCmcd(trackId: number, prevStats?: PlayerStats): CML.Cmcd {
         const sfByProtocol = {
             dash: 'd',
             hls: 'h',
@@ -51,13 +52,13 @@ export class PlayerStats {
             ? sfByProtocol[this.protocol?.toLowerCase() as keyof typeof sfByProtocol]
             : undefined;
 
-        const cmcd: Cmcd = {
+        const cmcd: CML.Cmcd = {
             bl: this.bufferAmount,
             bs: (this.stallCount ?? 0) - (prevStats?.stallCount ?? 0) > 0,
             br: (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0),
             mtp: this.recvByteRate,
             pr: this.playbackRate ?? this.playbackSpeed,
-            sf: sf as CmcdStreamingFormat | undefined,
+            sf: sf as CML.CmcdStreamingFormat | undefined,
             su: this.waitingData
         };
         if (trackId === this.videoTrackId) {
