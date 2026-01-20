@@ -5,6 +5,13 @@
  */
 
 import * as CML from '@svta/common-media-library';
+
+/**
+ * Collects variable names for player statistics metrics across different projects (e.g., wrts, webrtc).
+ * Variables remain undefined if they are not present in the stats for the current project
+ * (for example, 'latency' is undefined for webrtc).
+ * Includes the toCmcd() method to convert stats into a CMCD payload.
+ */
 export class PlayerStats {
     protocol?: string; // protocol: HLS, DASH, WRTS, HESP, SMOOTH
     currentTime?: number; // current time in ms
@@ -39,7 +46,10 @@ export class PlayerStats {
     stallCount?: number;
 
     /**
-     * Converts player stats to Cmcd format
+     * Converts the current {@link PlayerStats} snapshot into a CMCD (Common Media Client Data) payload.
+     * @param trackId - The track ID for which to generate the CMCD payload.
+     * @param prevStats - Optional previous {@link PlayerStats} snapshot to calculate deltas for incremental metrics since their last reset.
+     * @returns A {@link CML.Cmcd} object representing the CMCD payload.
      */
     toCmcd(trackId: number, prevStats?: PlayerStats): CML.Cmcd {
         const sfByProtocol = {
