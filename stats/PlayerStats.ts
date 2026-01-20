@@ -47,7 +47,7 @@ export class PlayerStats {
 
     /**
      * Converts the current {@link PlayerStats} snapshot into a CMCD (Common Media Client Data) payload.
-     * @param trackId - The track ID for which to generate the CMCD payload.
+     * @param trackId - The track ID used to override 'br' if the user requests only the audio or video track bitrate.
      * @param prevStats - Optional previous {@link PlayerStats} snapshot to calculate deltas for incremental metrics since their last reset.
      * @returns A {@link CML.Cmcd} object representing the CMCD payload.
      */
@@ -65,12 +65,14 @@ export class PlayerStats {
         const cmcd: CML.Cmcd = {
             bl: this.bufferAmount,
             bs: (this.stallCount ?? 0) - (prevStats?.stallCount ?? 0) > 0,
+            // The 'br' value is overridden later below if the user wants only the audio or video track bitrate, instead of the sum of both.
             br: (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0),
             mtp: this.recvByteRate,
             pr: this.playbackRate ?? this.playbackSpeed,
             sf: sf as CML.CmcdStreamingFormat | undefined,
             su: this.waitingData
         };
+        // Override 'br' if the user requests only the audio or video track bitrate.
         if (trackId === this.videoTrackId) {
             cmcd.br = this.videoTrackBandwidth ?? 0;
         } else if (trackId === this.audioTrackId) {
