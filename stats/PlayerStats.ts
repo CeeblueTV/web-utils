@@ -47,37 +47,55 @@ export class PlayerStats {
 
     /**
      * Converts the current {@link PlayerStats} snapshot into a CMCD (Common Media Client Data) payload.
-     * @param trackId - The track ID used to override 'br' if the user requests only the audio or video track bitrate.
+     * @param url - The full URL of the media object.
+     * @param trackId - The track ID for which to generate the CMCD payload.
      * @param prevStats - Optional previous {@link PlayerStats} snapshot to calculate deltas for incremental metrics since their last reset.
+     * @param sessionID - Optional session ID to include in the CMCD payload.
      * @returns A {@link CML.Cmcd} object representing the CMCD payload.
      */
-    toCmcd(trackId: number, prevStats?: PlayerStats): CML.Cmcd {
+    toCmcd(url: URL, trackId: number, prevStats?: PlayerStats, sessionID?: string): CML.Cmcd {
+        // br is computed to be only for video, or only audio track, or sum of both depending of if trackId matches either audio or video track IDs
+        const br =
+            trackId === this.videoTrackId
+                ? this.videoTrackBandwidth ?? 0
+                : trackId === this.audioTrackId
+                  ? this.audioTrackBandwidth ?? 0
+                  : (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0);
+
+        // sf defaults to other ("o") if protocol is not in the map, otherwise undefined if protocol is undefined
         const sfByProtocol = {
             dash: 'd',
             hls: 'h',
             smooth: 's'
         };
+        const proto = this.protocol?.toLowerCase();
+        const sf = proto ? sfByProtocol[proto as keyof typeof sfByProtocol] ?? 'o' : undefined;
 
-        const sf = this.protocol?.toLowerCase()
-            ? sfByProtocol[this.protocol?.toLowerCase() as keyof typeof sfByProtocol]
-            : undefined;
+        const ot =
+            trackId === this.audioTrackId
+                ? CML.CmcdObjectType.AUDIO
+                : trackId === this.videoTrackId
+                  ? CML.CmcdObjectType.VIDEO
+                  : CML.CmcdObjectType.OTHER;
 
         const cmcd: CML.Cmcd = {
-            bl: this.bufferAmount,
-            bs: (this.stallCount ?? 0) - (prevStats?.stallCount ?? 0) > 0,
-            // The 'br' value is overridden later below if the user wants only the audio or video track bitrate, instead of the sum of both.
-            br: (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0),
-            mtp: this.recvByteRate,
-            pr: this.playbackRate ?? this.playbackSpeed,
-            sf: sf as CML.CmcdStreamingFormat | undefined,
-            su: this.waitingData
+            bl: this.bufferAmount, // Buffer Length
+            bs: (this.stallCount ?? 0) - (prevStats?.stallCount ?? 0) > 0, // Buffer Starvation
+            br: br, // Encoded Bitrate
+            mtp: this.recvByteRate, // Measured mtp CMCD throughput
+            pr:
+                this.playbackRate ?? this.playbackSpeed
+                    ? Number((this.playbackRate ?? this.playbackSpeed)?.toFixed(2))
+                    : undefined, // Playback Rate
+            sf: sf as CML.CmcdStreamingFormat | undefined, // Streaming Formatq
+            su: this.waitingData, // Startup
+            dl: (this.bufferAmount ?? 0) * (this.playbackRate ?? this.playbackSpeed ?? 1), // Deadline
+            ot: ot, // Object Type
+            st: CML.CmcdStreamType.LIVE, // Stream Type
+            v: 1, // CMCD Version
+            cid: url.pathname.split('/').pop(), // Content ID
+            sid: sessionID // Session ID
         };
-        // Override 'br' if the user requests only the audio or video track bitrate.
-        if (trackId === this.videoTrackId) {
-            cmcd.br = this.videoTrackBandwidth ?? 0;
-        } else if (trackId === this.audioTrackId) {
-            cmcd.br = this.audioTrackBandwidth ?? 0;
-        }
         return cmcd;
     }
 }
