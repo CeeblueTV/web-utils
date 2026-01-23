@@ -78,16 +78,17 @@ export class PlayerStats {
                   ? CML.CmcdObjectType.VIDEO
                   : CML.CmcdObjectType.OTHER;
 
+        const pr =
+            this.playbackRate ?? this.playbackSpeed
+                ? Number((this.playbackRate ?? this.playbackSpeed)?.toFixed(2))
+                : undefined;
         const cmcd: CML.Cmcd = {
             bl: this.bufferAmount, // Buffer Length
             bs: (this.stallCount ?? 0) - (prevStats?.stallCount ?? 0) > 0, // Buffer Starvation
             br: br, // Encoded Bitrate
             mtp: this.recvByteRate, // Measured mtp CMCD throughput
-            pr:
-                this.playbackRate ?? this.playbackSpeed
-                    ? Number((this.playbackRate ?? this.playbackSpeed)?.toFixed(2))
-                    : undefined, // Playback Rate
-            sf: sf as CML.CmcdStreamingFormat | undefined, // Streaming Formatq
+            pr: pr, // Playback Rate
+            sf: sf as CML.CmcdStreamingFormat | undefined, // Streaming Format
             su: this.waitingData, // Startup
             dl: (this.bufferAmount ?? 0) * (this.playbackRate ?? this.playbackSpeed ?? 1), // Deadline
             ot: ot, // Object Type
