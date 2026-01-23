@@ -85,19 +85,19 @@ export class PlayerStats {
         const playBack = this.playbackRate ?? this.playbackSpeed;
         const pr = playBack ? Number(playBack.toFixed(2)) : undefined;
         const cmcd: CML.Cmcd = {
-            bl: this.bufferAmount, // Buffer Length
-            bs: (this.stallCount ?? 0) - (prevStats?.stallCount ?? 0) > 0, // Buffer Starvation
-            br: br, // Encoded Bitrate
-            mtp: this.recvByteRate, // Measured mtp CMCD throughput
-            pr: pr, // Playback Rate
-            sf: sf as CML.CmcdStreamingFormat | undefined, // Streaming Format
-            su: this.waitingData, // Startup
-            dl: (this.bufferAmount ?? 0) * (this.playbackRate ?? this.playbackSpeed ?? 1), // Deadline
+            v: 1, // CMCD Version
             ot: ot, // Object Type
             st: CML.CmcdStreamType.LIVE, // Stream Type
-            v: 1, // CMCD Version
             cid: url.pathname.split('/').pop(), // Content ID
-            sid: sessionID // Session ID
+            br: br, // Encoded Bitrate
+            ...(this.stallCount !== undefined ? { bs: this.stallCount - (prevStats?.stallCount ?? 0) > 0 } : {}), // Buffer Starvation
+            ...(this.bufferAmount !== undefined ? { bl: this.bufferAmount } : {}), // Buffer Length
+            ...(this.recvByteRate !== undefined ? { mtp: this.recvByteRate } : {}), // Measured mtp CMCD throughput
+            ...(pr !== undefined ? { pr: pr } : {}), // Playback Rate
+            ...(sf !== undefined ? { sf: sf as CML.CmcdStreamingFormat } : {}), // Streaming Format
+            ...(this.waitingData !== undefined ? { su: this.waitingData } : {}), // Startup
+            ...(this.bufferAmount !== undefined && playBack !== undefined ? { dl: this.bufferAmount * playBack } : {}), // Deadline
+            ...(sessionID !== undefined ? { sid: sessionID } : {}) // Session ID
         };
         return cmcd;
     }

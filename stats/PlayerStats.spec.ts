@@ -151,5 +151,22 @@ describe('PlayerStats', () => {
                 expect(current.toCmcd(TEST_URL, 0).bs).toBe(true);
             });
         });
+
+        describe('Optional fields exclusion', () => {
+            it('should not include keys in CMCD payload if source values are undefined', () => {
+                const stats = new PlayerStats();
+                // Par défaut, la plupart des propriétés sont undefined
+                const cmcd = stats.toCmcd(TEST_URL, 0);
+
+                expect('bl' in cmcd).toBe(false); // bufferAmount
+                expect('mtp' in cmcd).toBe(false); // recvByteRate
+                expect('pr' in cmcd).toBe(false); // playbackRate/Speed
+                expect('sf' in cmcd).toBe(false); // protocol
+                expect('su' in cmcd).toBe(false); // waitingData
+                expect('dl' in cmcd).toBe(false); // deadline
+                expect('sid' in cmcd).toBe(false); // sessionID
+                expect('bs' in cmcd).toBe(false); // stallCount
+            });
+        });
     });
 });
