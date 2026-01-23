@@ -53,7 +53,7 @@ export class PlayerStats {
      * @param sessionID - Optional session ID to include in the CMCD payload.
      * @returns A {@link CML.Cmcd} object representing the CMCD payload.
      */
-    toCmcd(url: URL, trackId: number, prevStats?: PlayerStats, sessionID?: string): CML.Cmcd {
+    toCmcd(url: URL, trackId: number, prevStats?: PlayerStats, sessionID?: string, short = false): CML.Cmcd {
         // br is computed to be only for video, or only audio track, or sum of both depending of if trackId matches either audio or video track IDs
         let br: number;
         if (trackId === this.videoTrackId) {
@@ -85,10 +85,17 @@ export class PlayerStats {
         const playBack = this.playbackRate ?? this.playbackSpeed;
         const pr = playBack ? Number(playBack.toFixed(2)) : undefined;
         const cmcd: CML.Cmcd = {
-            v: 1, // CMCD Version
-            ot: ot, // Object Type
-            st: CML.CmcdStreamType.LIVE, // Stream Type
-            cid: url.pathname.split('/').pop(), // Content ID
+            ...(short === false
+                ? {
+                      v: 1, // CMCD Version
+                      ot: ot, // Object Type
+                      st: CML.CmcdStreamType.LIVE, // Stream Type
+                      cid: url.pathname.split('/').pop(), // Content ID
+                      ...(this.bufferAmount !== undefined && playBack !== undefined
+                          ? { dl: this.bufferAmount * playBack }
+                          : {}) // Deadline
+                  }
+                : {}),
             br: br, // Encoded Bitrate
             ...(this.stallCount !== undefined ? { bs: this.stallCount - (prevStats?.stallCount ?? 0) > 0 } : {}), // Buffer Starvation
             ...(this.bufferAmount !== undefined ? { bl: this.bufferAmount } : {}), // Buffer Length
@@ -96,7 +103,6 @@ export class PlayerStats {
             ...(pr !== undefined ? { pr: pr } : {}), // Playback Rate
             ...(sf !== undefined ? { sf: sf as CML.CmcdStreamingFormat } : {}), // Streaming Format
             ...(this.waitingData !== undefined ? { su: this.waitingData } : {}), // Startup
-            ...(this.bufferAmount !== undefined && playBack !== undefined ? { dl: this.bufferAmount * playBack } : {}), // Deadline
             ...(sessionID !== undefined ? { sid: sessionID } : {}) // Session ID
         };
         return cmcd;

@@ -167,6 +167,26 @@ describe('PlayerStats', () => {
                 expect('sid' in cmcd).toBe(false); // sessionID
                 expect('bs' in cmcd).toBe(false); // stallCount
             });
+
+            it('should omit full fields when short = true', () => {
+                const stats = new PlayerStats();
+                stats.bufferAmount = 2000;
+                stats.playbackRate = 2;
+                const cmcdShort = stats.toCmcd(TEST_URL, 0, undefined, undefined, true);
+                expect('v' in cmcdShort).toBe(false);
+                expect('ot' in cmcdShort).toBe(false);
+                expect('st' in cmcdShort).toBe(false);
+                expect('cid' in cmcdShort).toBe(false);
+                expect('dl' in cmcdShort).toBe(false);
+
+                // Control: full payload includes them
+                const cmcdFull = stats.toCmcd(TEST_URL, 0, undefined, undefined, false);
+                expect(cmcdFull.v).toBe(1);
+                expect(cmcdFull.ot).toBeDefined();
+                expect(cmcdFull.st).toBe(CML.CmcdStreamType.LIVE);
+                expect(cmcdFull.cid).toBe('manifest.m3u8');
+                expect(cmcdFull.dl).toBe(4000);
+            });
         });
     });
 });
