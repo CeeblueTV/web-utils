@@ -55,12 +55,14 @@ export class PlayerStats {
      */
     toCmcd(url: URL, trackId: number, prevStats?: PlayerStats, sessionID?: string): CML.Cmcd {
         // br is computed to be only for video, or only audio track, or sum of both depending of if trackId matches either audio or video track IDs
-        const br =
-            trackId === this.videoTrackId
-                ? this.videoTrackBandwidth ?? 0
-                : trackId === this.audioTrackId
-                  ? this.audioTrackBandwidth ?? 0
-                  : (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0);
+        let br: number;
+        if (trackId === this.videoTrackId) {
+            br = this.videoTrackBandwidth ?? 0;
+        } else if (trackId === this.audioTrackId) {
+            br = this.audioTrackBandwidth ?? 0;
+        } else {
+            br = (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0);
+        }
 
         // sf defaults to other ("o") if protocol is not in the map, otherwise undefined if protocol is undefined
         const sfByProtocol = {
@@ -71,17 +73,17 @@ export class PlayerStats {
         const proto = this.protocol?.toLowerCase();
         const sf = proto ? sfByProtocol[proto as keyof typeof sfByProtocol] ?? 'o' : undefined;
 
-        const ot =
-            trackId === this.audioTrackId
-                ? CML.CmcdObjectType.AUDIO
-                : trackId === this.videoTrackId
-                  ? CML.CmcdObjectType.VIDEO
-                  : CML.CmcdObjectType.OTHER;
+        let ot: CML.CmcdObjectType;
+        if (trackId === this.audioTrackId) {
+            ot = CML.CmcdObjectType.AUDIO;
+        } else if (trackId === this.videoTrackId) {
+            ot = CML.CmcdObjectType.VIDEO;
+        } else {
+            ot = CML.CmcdObjectType.OTHER;
+        }
 
-        const pr =
-            this.playbackRate ?? this.playbackSpeed
-                ? Number((this.playbackRate ?? this.playbackSpeed)?.toFixed(2))
-                : undefined;
+        const playBack = this.playbackRate ?? this.playbackSpeed;
+        const pr = playBack ? Number(playBack.toFixed(2)) : undefined;
         const cmcd: CML.Cmcd = {
             bl: this.bufferAmount, // Buffer Length
             bs: (this.stallCount ?? 0) - (prevStats?.stallCount ?? 0) > 0, // Buffer Starvation
