@@ -85,7 +85,7 @@ export class PlayerStats {
         const playBack = this.playbackRate ?? this.playbackSpeed;
         const pr = playBack ? Number(playBack.toFixed(2)) : undefined;
         const cmcd: CML.Cmcd = {
-            ...(short === false
+            ...(!short
                 ? {
                       v: 1, // CMCD Version
                       ot: ot, // Object Type
