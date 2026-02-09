@@ -23,10 +23,12 @@ const _perf = performance; // to increase x10 now performance!
 export const EMPTY_FUNCTION = () => {};
 
 /**
- * Returns an efficient timestamp in milliseconds elapsed since {@link performance.timeOrigin},
+ * Returns an efficient timestamp in milliseconds elapsed since performance.timeOrigin,
  * representing the start of the current JavaScript execution context.
  *
- * Note: Each Web Worker runs in a separate JS context, so timestamps
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Performance/timeOrigin
+ *
+ * @remarks Each Web Worker runs in a separate JS context, so timestamps
  * are not directly comparable between different workers. Use {@link unixTime}
  * for comparable timestamps across different Web Workers.
  */
@@ -61,7 +63,7 @@ export function options(
     try {
         const url: any = urlOrQueryOrSearch;
         urlOrQueryOrSearch = new URL(url).searchParams;
-    } catch (e) {
+    } catch {
         if (typeof urlOrQueryOrSearch == 'string') {
             if (urlOrQueryOrSearch.startsWith('?')) {
                 urlOrQueryOrSearch = urlOrQueryOrSearch.substring(1);

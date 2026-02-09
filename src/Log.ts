@@ -71,7 +71,7 @@ export interface ILog {
     /**
      * Intercept,redefine or redirect any log
      * If you clear args you intercept the log and nothing happen more after this call.
-     * @param type log level
+     * @param level log level
      * @param args args
      * @returns
      */
@@ -79,7 +79,7 @@ export interface ILog {
     /**
      * Change log level, default log level is {@link LogLevel.INFO},
      * Boolean can be user to lets pass all the logs with `true` or disables all the logs with `false`.
-     * @note To debug production code without modifying it you can use a special query parameter
+     * @remarks To debug production code without modifying it you can use a special query parameter
      * called !cb-override-log-level to override this configuration.
      */
     level?: LogLevel | boolean;
