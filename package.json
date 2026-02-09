@@ -47,6 +47,7 @@
         "@html-eslint/eslint-plugin": "~0.22.0",
         "@html-eslint/parser": "~0.22.0",
         "@rollup/plugin-eslint": "~9.0.4",
+        "@rollup/plugin-node-resolve": "^16.0.3",
         "@rollup/plugin-replace": "~5.0.2",
         "@rollup/plugin-terser": "~0.4.3",
         "@rollup/plugin-typescript": "~11.1.4",
@@ -59,7 +60,6 @@
         "canvas": "^3.2.0",
         "eslint": "~8.56.0",
         "eslint-plugin-headers": "~1.0.4",
-        "husky": "^9.1.7",
         "is-ci": "~3.0.0",
         "jsdom": "^26.0.0",
         "lint-staged": "~15.2.0",
@@ -76,5 +76,8 @@
     },
     "publishConfig": {
         "access": "public"
+    },
+    "dependencies": {
+        "@svta/common-media-library": "^0.18.1"
     }
 }

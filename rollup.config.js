@@ -12,6 +12,7 @@ import eslint from '@rollup/plugin-eslint';
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import { dts } from 'rollup-plugin-dts';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 
 const input = 'index.ts';
 const output = 'dist/web-utils';
@@ -67,7 +68,8 @@ export default args => {
                     preventAssignment: true
                 }),
                 eslint(),
-                typescript({ target, downlevelIteration })
+                typescript({ target, downlevelIteration }),
+                nodeResolve()
             ]
         },
         {
