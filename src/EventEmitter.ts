@@ -6,6 +6,7 @@
 
 import { Loggable } from './Log';
 
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
 type FilterOnKey<T> = T extends 'once' | 'on' ? never : T extends `on${infer R}` ? R : never;
 type CaseVariations<T extends string> = string extends T ? string : Lowercase<T> | Capitalize<T>;
 /**

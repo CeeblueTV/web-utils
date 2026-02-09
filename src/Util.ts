@@ -63,7 +63,7 @@ export function options(
     try {
         const url: any = urlOrQueryOrSearch;
         urlOrQueryOrSearch = new URL(url).searchParams;
-    } catch (e) {
+    } catch {
         if (typeof urlOrQueryOrSearch == 'string') {
             if (urlOrQueryOrSearch.startsWith('?')) {
                 urlOrQueryOrSearch = urlOrQueryOrSearch.substring(1);
