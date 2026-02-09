@@ -5,188 +5,144 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { PlayerStats } from './PlayerStats';
 import * as CML from '@svta/common-media-library';
+import { PlayerStats } from './PlayerStats';
 
 describe('PlayerStats', () => {
-    const TEST_URL = new URL('https://example.com/streams/manifest.m3u8');
-    const SESSION_ID = 'test-session-123';
-
     describe('toCmcd', () => {
-        it('should map basic static and simple fields correctly', () => {
+        it('should generate a CMCD payload for the video track', () => {
             const stats = new PlayerStats();
-            stats.bufferAmount = 1500;
-            stats.recvByteRate = 5000;
+            stats.protocol = 'HLS';
+            stats.bufferAmount = 1000;
+            stats.playbackRate = 1.5;
+            stats.recvByteRate = 50_000;
             stats.waitingData = true;
+            stats.stallCount = 3;
+            stats.videoTrackId = 1;
+            stats.videoTrackBandwidth = 1500;
+            stats.audioTrackId = 2;
+            stats.audioTrackBandwidth = 64;
 
-            const cmcd = stats.toCmcd(TEST_URL, 0);
+            const prev = new PlayerStats();
+            prev.stallCount = 2;
 
-            expect(cmcd.v).toBe(1);
-            expect(cmcd.st).toBe(CML.CmcdStreamType.LIVE);
-            expect(cmcd.bl).toBe(1500);
-            expect(cmcd.mtp).toBe(5000);
-            expect(cmcd.su).toBe(true);
+            const url = new URL('https://example.com/live/manifest.m3u8?token=abc');
+            const cmcd = stats.toCmcd(url, 1, prev);
+
+            expect(cmcd).toMatchObject({
+                v: 1,
+                ot: CML.CmcdObjectType.VIDEO,
+                st: CML.CmcdStreamType.LIVE,
+                cid: 'manifest.m3u8',
+                dl: 1500,
+                br: 1500,
+                bs: true,
+                bl: 1000,
+                mtp: 50_000,
+                pr: 1.5,
+                sf: 'h',
+                su: true
+            });
         });
 
-        it('should extract content ID (cid) from URL', () => {
+        it('should select the correct object type and bitrate for audio track', () => {
             const stats = new PlayerStats();
-            const cmcd = stats.toCmcd(TEST_URL, 0);
-            expect(cmcd.cid).toBe('manifest.m3u8');
+            stats.audioTrackId = 2;
+            stats.audioTrackBandwidth = 96;
+            stats.videoTrackId = 1;
+            stats.videoTrackBandwidth = 1800;
+
+            const url = new URL('https://example.com/live/chunk.ts');
+            const cmcd = stats.toCmcd(url, 2);
+
+            expect(cmcd.ot).toBe(CML.CmcdObjectType.AUDIO);
+            expect(cmcd.br).toBe(96);
         });
 
-        it('should include session ID (sid) when provided', () => {
+        it('should sum bitrates and use OTHER object type when trackId does not match', () => {
             const stats = new PlayerStats();
-            const cmcd = stats.toCmcd(TEST_URL, 0, undefined, SESSION_ID);
-            expect(cmcd.sid).toBe(SESSION_ID);
+            stats.audioTrackId = 2;
+            stats.audioTrackBandwidth = 96;
+            stats.videoTrackId = 1;
+            stats.videoTrackBandwidth = 1800;
+
+            const url = new URL('https://example.com/live/chunk.ts');
+            const cmcd = stats.toCmcd(url, 99);
+
+            expect(cmcd.ot).toBe(CML.CmcdObjectType.OTHER);
+            expect(cmcd.br).toBe(96 + 1800);
         });
 
-        describe('Bitrate (br)', () => {
-            it('should return only video bandwidth if trackId matches videoTrackId', () => {
-                const stats = new PlayerStats();
-                stats.videoTrackId = 1;
-                stats.videoTrackBandwidth = 2000;
-                stats.audioTrackBandwidth = 128;
+        it('should prefer playbackRate over playbackSpeed and round pr to 2 decimals', () => {
+            const stats = new PlayerStats();
+            stats.playbackSpeed = 1.0;
+            stats.playbackRate = 1.234;
+            stats.bufferAmount = 1000;
 
-                const cmcd = stats.toCmcd(TEST_URL, 1);
-                expect(cmcd.br).toBe(2000);
-            });
+            const url = new URL('https://example.com/v/seg.ts');
+            const cmcd = stats.toCmcd(url, 1);
 
-            it('should return only audio bandwidth if trackId matches audioTrackId', () => {
-                const stats = new PlayerStats();
-                stats.audioTrackId = 2;
-                stats.videoTrackBandwidth = 2000;
-                stats.audioTrackBandwidth = 128;
-
-                const cmcd = stats.toCmcd(TEST_URL, 2);
-                expect(cmcd.br).toBe(128);
-            });
-
-            it('should return sum of bandwidths if trackId matches neither', () => {
-                const stats = new PlayerStats();
-                stats.videoTrackBandwidth = 2000;
-                stats.audioTrackBandwidth = 128;
-
-                const cmcd = stats.toCmcd(TEST_URL, 999);
-                expect(cmcd.br).toBe(2128);
-            });
+            expect(cmcd.pr).toBe(1.23);
+            expect(cmcd.dl).toBe(1234);
         });
 
-        describe('Streaming Format (sf)', () => {
-            it('should map known protocols correctly', () => {
-                const stats = new PlayerStats();
+        it('should fall back to playbackSpeed when playbackRate is missing', () => {
+            const stats = new PlayerStats();
+            stats.playbackSpeed = 2;
+            stats.bufferAmount = 500;
 
-                stats.protocol = 'DASH';
-                expect(stats.toCmcd(TEST_URL, 0).sf).toBe('d');
+            const url = new URL('https://example.com/v/seg.ts');
+            const cmcd = stats.toCmcd(url, 1);
 
-                stats.protocol = 'HLS';
-                expect(stats.toCmcd(TEST_URL, 0).sf).toBe('h');
-
-                stats.protocol = 'SMOOTH';
-                expect(stats.toCmcd(TEST_URL, 0).sf).toBe('s');
-            });
-
-            it('should return "o" for unknown protocols and undefined for missing protocol', () => {
-                const stats = new PlayerStats();
-
-                stats.protocol = 'WEBRTC';
-                expect(stats.toCmcd(TEST_URL, 0).sf).toBe('o');
-
-                stats.protocol = undefined;
-                expect(stats.toCmcd(TEST_URL, 0).sf).toBeUndefined();
-            });
+            expect(cmcd.pr).toBe(2);
+            expect(cmcd.dl).toBe(1000);
         });
 
-        describe('Object Type (ot)', () => {
-            it('should determine ot based on trackId', () => {
-                const stats = new PlayerStats();
-                stats.audioTrackId = 100;
-                stats.videoTrackId = 200;
+        it('should map streaming format by protocol and default to "o" for unknown protocol', () => {
+            const url = new URL('https://example.com/live/manifest.mpd');
 
-                expect(stats.toCmcd(TEST_URL, 100).ot).toBe(CML.CmcdObjectType.AUDIO);
-                expect(stats.toCmcd(TEST_URL, 200).ot).toBe(CML.CmcdObjectType.VIDEO);
-                expect(stats.toCmcd(TEST_URL, 999).ot).toBe(CML.CmcdObjectType.OTHER);
-            });
+            const dash = new PlayerStats();
+            dash.protocol = 'DASH';
+            expect(dash.toCmcd(url, 1).sf).toBe('d');
+
+            const smooth = new PlayerStats();
+            smooth.protocol = 'smooth';
+            expect(smooth.toCmcd(url, 1).sf).toBe('s');
+
+            const unknown = new PlayerStats();
+            unknown.protocol = 'WRTS';
+            expect(unknown.toCmcd(url, 1).sf).toBe('o');
         });
 
-        describe('Playback Rate (pr) and Deadline (dl)', () => {
-            it('should round playbackRate to 2 decimals', () => {
-                const stats = new PlayerStats();
-                stats.playbackRate = 1.2555;
-                expect(stats.toCmcd(TEST_URL, 0).pr).toBe(1.26);
-            });
+        it('should not set optional fields when their source values are undefined', () => {
+            const stats = new PlayerStats();
+            const url = new URL('https://example.com/live/seg.ts');
+            const cmcd = stats.toCmcd(url, 1);
 
-            it('should fallback to playbackSpeed for pr', () => {
-                const stats = new PlayerStats();
-                stats.playbackRate = undefined;
-                stats.playbackSpeed = 1.5;
-                expect(stats.toCmcd(TEST_URL, 0).pr).toBe(1.5);
+            expect(cmcd).toMatchObject({
+                v: 1,
+                st: CML.CmcdStreamType.LIVE,
+                cid: 'seg.ts'
             });
-
-            it('should calculate deadline (dl) correctly', () => {
-                const stats = new PlayerStats();
-                stats.bufferAmount = 2000;
-                stats.playbackRate = 2;
-                // dl = bufferAmount * playbackRate
-                expect(stats.toCmcd(TEST_URL, 0).dl).toBe(4000);
-            });
+            expect(cmcd).not.toHaveProperty('sf');
+            expect(cmcd).not.toHaveProperty('su');
+            expect(cmcd).not.toHaveProperty('pr');
+            expect(cmcd).not.toHaveProperty('dl');
+            expect(cmcd).not.toHaveProperty('bl');
+            expect(cmcd).not.toHaveProperty('mtp');
+            expect(cmcd).not.toHaveProperty('bs');
         });
 
-        describe('Buffer Starvation (bs)', () => {
-            it('should be true if stallCount has increased since prevStats', () => {
-                const current = new PlayerStats();
-                const prev = new PlayerStats();
+        it('should set bs based on stallCount delta (since last reset)', () => {
+            const stats = new PlayerStats();
+            stats.stallCount = 5;
+            const prev = new PlayerStats();
+            prev.stallCount = 5;
 
-                current.stallCount = 5;
-                prev.stallCount = 4;
-                expect(current.toCmcd(TEST_URL, 0, prev).bs).toBe(true);
+            const url = new URL('https://example.com/live/seg.ts');
+            const cmcd = stats.toCmcd(url, 1, prev);
 
-                current.stallCount = 5;
-                prev.stallCount = 5;
-                expect(current.toCmcd(TEST_URL, 0, prev).bs).toBe(false);
-            });
-
-            it('should handle missing stallCount in prevStats', () => {
-                const current = new PlayerStats();
-                current.stallCount = 1;
-                expect(current.toCmcd(TEST_URL, 0).bs).toBe(true);
-            });
-        });
-
-        describe('Optional fields exclusion', () => {
-            it('should not include keys in CMCD payload if source values are undefined', () => {
-                const stats = new PlayerStats();
-                // Par défaut, la plupart des propriétés sont undefined
-                const cmcd = stats.toCmcd(TEST_URL, 0);
-
-                expect('bl' in cmcd).toBe(false); // bufferAmount
-                expect('mtp' in cmcd).toBe(false); // recvByteRate
-                expect('pr' in cmcd).toBe(false); // playbackRate/Speed
-                expect('sf' in cmcd).toBe(false); // protocol
-                expect('su' in cmcd).toBe(false); // waitingData
-                expect('dl' in cmcd).toBe(false); // deadline
-                expect('sid' in cmcd).toBe(false); // sessionID
-                expect('bs' in cmcd).toBe(false); // stallCount
-            });
-
-            it('should omit full fields when short = true', () => {
-                const stats = new PlayerStats();
-                stats.bufferAmount = 2000;
-                stats.playbackRate = 2;
-                const cmcdShort = stats.toCmcd(TEST_URL, 0, undefined, undefined, true);
-                expect('v' in cmcdShort).toBe(false);
-                expect('ot' in cmcdShort).toBe(false);
-                expect('st' in cmcdShort).toBe(false);
-                expect('cid' in cmcdShort).toBe(false);
-                expect('dl' in cmcdShort).toBe(false);
-
-                // Control: full payload includes them
-                const cmcdFull = stats.toCmcd(TEST_URL, 0, undefined, undefined, false);
-                expect(cmcdFull.v).toBe(1);
-                expect(cmcdFull.ot).toBeDefined();
-                expect(cmcdFull.st).toBe(CML.CmcdStreamType.LIVE);
-                expect(cmcdFull.cid).toBe('manifest.m3u8');
-                expect(cmcdFull.dl).toBe(4000);
-            });
+            expect(cmcd.bs).toBe(false);
         });
     });
 });

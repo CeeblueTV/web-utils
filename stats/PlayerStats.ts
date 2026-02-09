@@ -50,20 +50,47 @@ export class PlayerStats {
      * @param url - The full URL of the media object.
      * @param trackId - The track ID for which to generate the CMCD payload.
      * @param prevStats - Optional previous {@link PlayerStats} snapshot to calculate deltas for incremental metrics since their last reset.
-     * @param sessionID - Optional session ID to include in the CMCD payload.
      * @returns A {@link CML.Cmcd} object representing the CMCD payload.
      */
-    toCmcd(url: URL, trackId: number, prevStats?: PlayerStats, sessionID?: string, short = false): CML.Cmcd {
-        // br is computed to be only for video, or only audio track, or sum of both depending of if trackId matches either audio or video track IDs
-        let br: number;
-        if (trackId === this.videoTrackId) {
-            br = this.videoTrackBandwidth ?? 0;
-        } else if (trackId === this.audioTrackId) {
-            br = this.audioTrackBandwidth ?? 0;
-        } else {
-            br = (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0);
-        }
+    toCmcd(url: URL, trackId: number, prevStats?: PlayerStats): CML.Cmcd {
+        const cmcd: CML.Cmcd = {};
+        // Determine playback rate to use, preferring 'playbackRate' if available, otherwise falling back to 'playbackSpeed'
+        const playBack = this.playbackRate ?? this.playbackSpeed;
 
+        cmcd.v = 1; // CMCD Version
+        // Object Type
+        if (trackId === this.audioTrackId) {
+            cmcd.ot = CML.CmcdObjectType.AUDIO;
+        } else if (trackId === this.videoTrackId) {
+            cmcd.ot = CML.CmcdObjectType.VIDEO;
+        } else {
+            cmcd.ot = CML.CmcdObjectType.OTHER;
+        }
+        cmcd.st = CML.CmcdStreamType.LIVE; // Stream Type
+        cmcd.cid = url.pathname.split('/').pop(); // Content ID
+        if (this.bufferAmount != null && playBack != null) {
+            cmcd.dl = this.bufferAmount * playBack; // Deadline
+        }
+        // br is computed to be only for video, or only audio track, or sum of both depending of if trackId matches either audio or video track IDs
+        if (trackId === this.videoTrackId) {
+            cmcd.br = this.videoTrackBandwidth ?? 0;
+        } else if (trackId === this.audioTrackId) {
+            cmcd.br = this.audioTrackBandwidth ?? 0;
+        } else {
+            cmcd.br = (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0);
+        }
+        if (this.stallCount != null) {
+            cmcd.bs = this.stallCount - (prevStats?.stallCount ?? 0) > 0; // Buffer Starvation
+        }
+        if (this.bufferAmount != null) {
+            cmcd.bl = this.bufferAmount; // Buffer Length
+        }
+        if (this.recvByteRate != null) {
+            cmcd.mtp = this.recvByteRate; // Measured mtp CMCD throughput
+        }
+        if (playBack != null) {
+            cmcd.pr = Number(playBack.toFixed(2)); // Playback Rate
+        }
         // sf defaults to other ("o") if protocol is not in the map, otherwise undefined if protocol is undefined
         const sfByProtocol = {
             dash: 'd',
@@ -71,40 +98,12 @@ export class PlayerStats {
             smooth: 's'
         };
         const proto = this.protocol?.toLowerCase();
-        const sf = proto ? sfByProtocol[proto as keyof typeof sfByProtocol] ?? 'o' : undefined;
-
-        let ot: CML.CmcdObjectType;
-        if (trackId === this.audioTrackId) {
-            ot = CML.CmcdObjectType.AUDIO;
-        } else if (trackId === this.videoTrackId) {
-            ot = CML.CmcdObjectType.VIDEO;
-        } else {
-            ot = CML.CmcdObjectType.OTHER;
+        if (proto != null) {
+            cmcd.sf = (sfByProtocol[proto as keyof typeof sfByProtocol] ?? 'o') as CML.CmcdStreamingFormat; // Streaming Format
         }
-
-        const playBack = this.playbackRate ?? this.playbackSpeed;
-        const pr = playBack ? Number(playBack.toFixed(2)) : undefined;
-        const cmcd: CML.Cmcd = {
-            ...(!short
-                ? {
-                      v: 1, // CMCD Version
-                      ot: ot, // Object Type
-                      st: CML.CmcdStreamType.LIVE, // Stream Type
-                      cid: url.pathname.split('/').pop(), // Content ID
-                      ...(this.bufferAmount !== undefined && playBack !== undefined
-                          ? { dl: this.bufferAmount * playBack }
-                          : {}) // Deadline
-                  }
-                : {}),
-            br: br, // Encoded Bitrate
-            ...(this.stallCount !== undefined ? { bs: this.stallCount - (prevStats?.stallCount ?? 0) > 0 } : {}), // Buffer Starvation
-            ...(this.bufferAmount !== undefined ? { bl: this.bufferAmount } : {}), // Buffer Length
-            ...(this.recvByteRate !== undefined ? { mtp: this.recvByteRate } : {}), // Measured mtp CMCD throughput
-            ...(pr !== undefined ? { pr: pr } : {}), // Playback Rate
-            ...(sf !== undefined ? { sf: sf as CML.CmcdStreamingFormat } : {}), // Streaming Format
-            ...(this.waitingData !== undefined ? { su: this.waitingData } : {}), // Startup
-            ...(sessionID !== undefined ? { sid: sessionID } : {}) // Session ID
-        };
+        if (this.waitingData != null) {
+            cmcd.su = this.waitingData; // Startup
+        }
         return cmcd;
     }
 }
