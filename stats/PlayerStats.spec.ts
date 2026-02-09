@@ -30,7 +30,6 @@ describe('PlayerStats', () => {
             const cmcd = stats.toCmcd(url, 1, prev);
 
             expect(cmcd).toMatchObject({
-                v: 1,
                 ot: CML.CmcdObjectType.VIDEO,
                 st: CML.CmcdStreamType.LIVE,
                 cid: 'manifest.m3u8',
@@ -120,7 +119,6 @@ describe('PlayerStats', () => {
             const cmcd = stats.toCmcd(url, 1);
 
             expect(cmcd).toMatchObject({
-                v: 1,
                 st: CML.CmcdStreamType.LIVE,
                 cid: 'seg.ts'
             });

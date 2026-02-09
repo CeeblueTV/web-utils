@@ -57,7 +57,6 @@ export class PlayerStats {
         // Determine playback rate to use, preferring 'playbackRate' if available, otherwise falling back to 'playbackSpeed'
         const playBack = this.playbackRate ?? this.playbackSpeed;
 
-        cmcd.v = 1; // CMCD Version
         // Object Type
         if (trackId === this.audioTrackId) {
             cmcd.ot = CML.CmcdObjectType.AUDIO;
