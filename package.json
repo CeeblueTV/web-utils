@@ -5,13 +5,13 @@
     "keywords": [
         "utils"
     ],
-    "homepage": "https://github.com/ceebluetv/web-utils#readme",
+    "homepage": "https://github.com/CeeblueTV/web-utils#readme",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/ceebluetv/web-utils.git"
+        "url": "git+https://github.com/CeeblueTV/web-utils.git"
     },
     "bugs": {
-        "url": "https://github.com/ceebluetv/web-utils/issues"
+        "url": "https://github.com/CeeblueTV/web-utils/issues"
     },
     "main": "dist/web-utils.js",
     "types": "dist/web-utils.d.ts",
