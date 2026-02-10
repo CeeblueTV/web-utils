@@ -13,13 +13,13 @@ export { EventEmitter } from './src/EventEmitter';
 export { FixMap } from './src/FixMap';
 export { NetAddress } from './src/NetAddress';
 export { Numbers } from './src/Numbers';
-export { Queue } from './src//Queue';
+export { Queue } from './src/Queue';
 export { SDP } from './src/SDP';
 export * as Util from './src/Util';
 export { WebSocketReliable, WebSocketReliableError } from './src/WebSocketReliable';
 export * as EpochTime from './src/EpochTime';
 export { LogLevel, ILog, Log, Loggable, log } from './src/Log';
-export { PlayerStats } from './stats/PlayerStats';
+export { PlayerStats } from './src/stats/PlayerStats';
 // Export the Common Media Library as the CML namespace.
 // Example usage: CML.Cmcd, CML.CmcdStreamingFormat, etc.
 export * as CML from '@svta/common-media-library';
