@@ -86,7 +86,7 @@ export class BinaryReader {
     readDouble(): number {
         return this.next(8) === 8 ? this._view.getFloat64(this._position - 8) : 0;
     }
-    read7Bit(bytes = 5): number {
+    read7Bit(): number {
         let result: number = 0;
         let factor: number = 1;
         while (this.available()) {
