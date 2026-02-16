@@ -91,6 +91,7 @@ export enum Type {
     HESP = 'HESP',
     WRTS = 'WebRTS',
     WEBRTC = 'WebRTC',
+    DIRECT_STREAMING = 'DirectStreaming',
     META = 'Meta',
     DATA = 'Data'
 }
@@ -121,6 +122,11 @@ export function defineMediaExt(type: Type, params: Params) {
     // Normalize mediaExt in removing the possible '.' prefix and change it to lower case
     params.mediaExt = Util.trimStart(params.mediaExt, '.').toLowerCase();
     switch (type) {
+        case Type.DIRECT_STREAMING:
+            if (!params.mediaExt) {
+                params.mediaExt = 'mp4';
+            }
+            break;
         case Type.HESP:
             params.mediaExt = 'mp4';
             break;
@@ -170,6 +176,9 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
                 break;
             case Type.WRTS:
                 url.pathname = '/wrts/' + params.streamName + '.' + params.mediaExt;
+                break;
+            case Type.DIRECT_STREAMING:
+                url.pathname = '/live/' + params.streamName + '.' + params.mediaExt;
                 break;
             case Type.META:
                 url.pathname = '/json_' + params.streamName + '.js';

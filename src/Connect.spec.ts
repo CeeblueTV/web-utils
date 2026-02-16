@@ -33,20 +33,21 @@ describe('Connect', () => {
             expect(params.mediaExt).toBe('rts');
         });
 
-        it('should not set extension for WebRTS with JSON manifest', () => {
+        it('should set default rts extension for WebRTS with JSON manifest', () => {
             const params: Params = { endPoint: 'https://example.com/manifest.json', streamName: 'test' };
             defineMediaExt(Type.WRTS, params);
-            expect(params.mediaExt).toBe('rts'); // Default value
+            expect(params.mediaExt).toBe('rts');
         });
 
-        it('should set media extension to MP4', () => {
+        it('should set media extension to MP4 (from URL extension or ext= param)', () => {
             const params: Params = { endPoint: 'https://example.com/media.mp4' };
             defineMediaExt(Type.WRTS, params);
-            expect(params.mediaExt).toBe('mp4'); // Default value
+            expect(params.mediaExt).toBe('mp4');
 
             params.endPoint = 'https://example.com/media.rts?ext=mp4';
+            params.mediaExt = undefined; // important: force recompute
             defineMediaExt(Type.WRTS, params);
-            expect(params.mediaExt).toBe('mp4'); // Default value
+            expect(params.mediaExt).toBe('mp4');
         });
 
         it('should set correct media extension for META', () => {
@@ -72,6 +73,18 @@ describe('Connect', () => {
             defineMediaExt(Type.HESP, params);
             expect(params.mediaExt).toBe('mp4');
         });
+
+        it('should default to mp4 for DIRECT_STREAMING when mediaExt cannot be determined', () => {
+            const params: Params = { endPoint: 'example.com', streamName: 'test' };
+            defineMediaExt(Type.DIRECT_STREAMING, params);
+            expect(params.mediaExt).toBe('mp4');
+        });
+
+        it('should keep and normalize provided mediaExt for DIRECT_STREAMING', () => {
+            const params: Params = { endPoint: 'example.com', streamName: 'test', mediaExt: '.FLV' };
+            defineMediaExt(Type.DIRECT_STREAMING, params);
+            expect(params.mediaExt).toBe('flv');
+        });
     });
 
     describe('buildURL', () => {
@@ -91,6 +104,18 @@ describe('Connect', () => {
             const params: Params = { endPoint: 'example.com', streamName: 'test' };
             const url = buildURL(Type.WRTS, params);
             expect(url.toString()).toBe('wss://example.com/wrts/test.rts');
+        });
+
+        it('should build correct DIRECT_STREAMING URL (default mp4)', () => {
+            const params: Params = { endPoint: 'example.com', streamName: 'test' };
+            const url = buildURL(Type.DIRECT_STREAMING, params);
+            expect(url.toString()).toBe('wss://example.com/live/test.mp4');
+        });
+
+        it('should build correct DIRECT_STREAMING URL using mediaExt', () => {
+            const params: Params = { endPoint: 'example.com', mediaExt: 'flv', streamName: 'test' };
+            const url = buildURL(Type.DIRECT_STREAMING, params);
+            expect(url.toString()).toBe('wss://example.com/live/test.flv');
         });
 
         it('should build correct META URL', () => {
@@ -160,7 +185,7 @@ describe('Connect', () => {
             };
             const url = buildURL(Type.HESP, params);
             expect(url.searchParams.get('existing')).toBe('param');
-            // accessToken.
+            // accessToken
             expect(url.searchParams.get('id')).toBe('token123');
         });
 
