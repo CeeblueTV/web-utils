@@ -5,6 +5,7 @@
  */
 
 import * as CML from '@svta/common-media-library';
+import { Loggable } from '../Log';
 
 /**
  * Collects variable names for player statistics metrics across different projects (e.g., wrts, webrtc).
@@ -12,7 +13,7 @@ import * as CML from '@svta/common-media-library';
  * (for example, 'latency' is undefined for webrtc).
  * Includes the toCmcd() method to convert stats into a CMCD payload.
  */
-export class PlayerStats {
+export class PlayerStats extends Loggable {
     protocol?: string; // protocol: HLS, DASH, WRTS, HESP, SMOOTH
     currentTime?: number; // current time in ms
     waitingData?: boolean;
