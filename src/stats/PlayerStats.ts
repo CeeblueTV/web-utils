@@ -23,6 +23,9 @@ export class PlayerStats extends Loggable {
     rtt?: number; // round trip time in ms
     jitter?: number; // jitter of reception RFC3550
 
+    skippedVideo?: number; // video skipped in ms since the beginning of the session
+    skippedAudio?: number; // audio skipped in ms since the beginning of the session
+
     playbackSpeed?: number;
     playbackRate?: number;
 
@@ -38,8 +41,6 @@ export class PlayerStats extends Loggable {
     audioPerSecond?: number; // sample audio per second
 
     // following parameters are counters
-    skippedVideoCount?: number; // frame video skipped
-    skippedAudioCount?: number; // sample audio skipped
 
     lostPacketCount?: number; // network packets lost
     nackCount?: number; // current estimated Negative Acknowledgement count
