@@ -181,6 +181,24 @@ describe('Util', () => {
                     ])
                 )
             ).toBe(false);
+            expect(
+                Util.equal(
+                    undefined,
+                    new Map([
+                        ['key1', [1, 2]],
+                        ['key2', [1, 3]]
+                    ])
+                )
+            ).toBe(false);
+            expect(
+                Util.equal(
+                    new Map([
+                        ['key1', [1, 2]],
+                        ['key2', [1, 2]]
+                    ]),
+                    undefined
+                )
+            ).toBe(false);
         });
 
         it('should compare Set object', () => {
@@ -188,6 +206,8 @@ describe('Util', () => {
             expect(Util.equal(new Set(['key1', 'key2']), new Set(['key1', 'key3']))).toBe(false);
             expect(Util.equal(new Set([[1, 2]]), new Set([[1, 2]]))).toBe(true);
             expect(Util.equal(new Set([[1, 2]]), new Set([[1, 3]]))).toBe(false);
+            expect(Util.equal(undefined, new Set([[1, 3]]))).toBe(false);
+            expect(Util.equal(new Set([[1, 2]]), undefined)).toBe(false);
         });
 
         it('should compare nested structures', () => {
@@ -316,6 +336,105 @@ describe('Util', () => {
             expect(obj.streamname).toBeNull();
             expect(obj.STREAMNAME).toBeNull();
             expect(obj.stream).toBeUndefined();
+        });
+    });
+
+    describe('stringify', () => {
+        it('should stringify null and undefined', () => {
+            expect(Util.stringify(null)).toBe('null');
+            expect(Util.stringify(undefined)).toBe('undefined');
+        });
+
+        it('should stringify Error-like inputs (error/message)', () => {
+            expect(Util.stringify(new Error('boom'))).toBe('boom');
+
+            expect(Util.stringify({ error: 'superError' })).toBe('superError');
+            expect(Util.stringify({ message: 'hello' })).toBe('hello');
+            // If both exist, current implementation picks obj.error first because of `obj.error || obj.message`
+            expect(Util.stringify({ error: 'e', message: 'm' })).toBe('e');
+        });
+
+        it('should stringify numbers with default decimal=2 and custom decimals', () => {
+            expect(Util.stringify(1)).toBe('1.00');
+            expect(Util.stringify(1.234)).toBe('1.23');
+            expect(Util.stringify(1.234, { decimal: 0 })).toBe('1');
+            expect(Util.stringify(1.234, { decimal: 3 })).toBe('1.234');
+        });
+
+        it('should stringify booleans and strings as-is', () => {
+            expect(Util.stringify(true)).toBe('true');
+            expect(Util.stringify(false)).toBe('false');
+            expect(Util.stringify('abc')).toBe('abc');
+            expect(Util.stringify('')).toBe('');
+        });
+
+        it('should decode binary iterables by default, and show byte length when noBin=true', () => {
+            const bytes = Util.toBin('Hello 😭');
+
+            // default: decode bytes back to string
+            expect(Util.stringify(bytes)).toBe('Hello 😭');
+
+            // noBin: show length format
+            expect(Util.stringify(bytes, { noBin: true })).toBe(`[${bytes.byteLength}#bytes]`);
+        });
+
+        it('should stringify arrays and objects with spacing', () => {
+            expect(Util.stringify([1, 2], { space: '' })).toBe('[1.00,2.00]');
+            expect(Util.stringify([1, 'a', true])).toBe('[1.00, a, true]');
+
+            expect(Util.stringify({ a: 1 }, { space: '' })).toBe('{a:1.00}');
+            expect(Util.stringify({ a: 1, b: 'x' })).toBe('{a:1.00, b:x}');
+
+            expect(Util.stringify([])).toBe('[]');
+            expect(Util.stringify({})).toBe('{}');
+        });
+
+        it('should stringify map or set', () => {
+            expect(Util.stringify(new Set())).toBe('Set[]');
+            expect(Util.stringify(new Map())).toBe('Map{}');
+
+            expect(Util.stringify(new Set([1, 2]))).toBe('Set[1.00, 2.00]');
+            expect(Util.stringify(new Set(['a', true]))).toBe('Set[a, true]');
+
+            let map = new Map<unknown, unknown>([
+                ['a', 1],
+                ['b', true]
+            ]);
+            expect(Util.stringify(map)).toBe('Map{a:1.00, b:true}');
+
+            const set = new Set<unknown>([{ a: 1 }]);
+            // recursion=1 => Set iterates with recursion-1 => 0 => object becomes [object Object]
+            expect(Util.stringify(set, { recursion: 1 })).toBe('Set[[object Object]]');
+            // recursion=2 => element recursion=1 => object rendered with its key, value recursion=0
+            expect(Util.stringify(set, { recursion: 2 })).toBe('Set[{a:1.00}]');
+
+            const keyObj = { k: 1 };
+            const valObj = { v: 2 };
+            map = new Map<unknown, unknown>([[keyObj, valObj]]);
+            // recursion=1 => key/value stringify with recursion=0 => both as [object Object]
+            expect(Util.stringify(map, { recursion: 1 })).toBe('Map{[object Object]:[object Object]}');
+            // recursion=2 => key/value stringify with recursion=1 => object prints its props
+            expect(Util.stringify(map, { recursion: 2 })).toBe('Map{{k:1.00}:{v:2.00}}');
+
+            expect(Util.stringify(new Set([1]), { recursion: 0 })).toBe('[object Set]');
+            expect(Util.stringify(new Map([['a', 1]]), { recursion: 0 })).toBe('[object Map]');
+        });
+
+        it('should honor recursion depth (stop recursion)', () => {
+            // recursion=0 => treated as "stop": returns String(obj) for non-boolean/non-string objects
+            // For arrays/objects this yields "[object Array]" or "[object Object]"
+            expect(Util.stringify([1, 2], { recursion: 0 })).toBe('[object Array]');
+            expect(Util.stringify({ a: 1 }, { recursion: 0 })).toBe('[object Object]');
+        });
+
+        it('should recursively stringify nested structures up to recursion depth', () => {
+            const obj = { a: { b: 1 } };
+
+            // recursion=1: object -> properties stringified with recursion=0 => nested object becomes "[object Object]"
+            expect(Util.stringify(obj, { space: '', recursion: 1 })).toBe('{a:[object Object]}');
+
+            // recursion=2: nested object gets 1 level deeper (b is number)
+            expect(Util.stringify(obj, { space: '', recursion: 2 })).toBe('{a:{b:1.00}}');
         });
     });
 });
