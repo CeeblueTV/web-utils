@@ -157,10 +157,12 @@ export function iterableEntries(value: any): IterableIterator<[string, any]> {
  * Converts various data types, such as objects, strings, exceptions, errors,
  * or numbers, into a string representation. Since it offers a more comprehensive format,
  * this function is preferred to `JSON.stringify()`.
+ *
  * @param obj Any objects, strings, exceptions, errors, or number
  * @param params.space `''`, allows to configure space in the string representation
  * @param params.decimal `2`, allows to choose the number of decimal to display in the string representation
- * @param params.recursion `1`, recursion depth to stringify recursively every object value until this depth, beware if a value refers to a already parsed value an infinite loop will occur
+ * @param params.recursion `1`, recursion depth to stringify recursively every object value until this depth,
+ * beware if a value refers to a already parsed value an infinite loop will occur
  * @param params.noBin `false`, when set skip binary encoding and write inplace a bin-length information
  * @returns the final string representation
  */
@@ -193,29 +195,62 @@ export function stringify(
     // boolean or string type or stop recursivity
     if (typeof obj === 'boolean' || obj.substring || !params.recursion) {
         // is already a string OR has to be stringified
-        return String(obj);
+        return typeof obj === 'object' ? Object.prototype.toString.call(obj) : String(obj);
     }
 
-    const space = params.space || '';
+    const space = params.space;
+
+    if (obj instanceof Set) {
+        let res = 'Set[';
+        let first = true;
+        for (const value of obj.values()) {
+            if (!first) {
+                res += ',' + space;
+            }
+            first = false;
+            res += stringify(value, Object.assign({ ...params }, { recursion: params.recursion - 1 }));
+        }
+        return res + ']';
+    }
+
+    if (obj instanceof Map) {
+        let res = 'Map{';
+        let first = true;
+        for (const [k, v] of obj.entries()) {
+            if (!first) {
+                res += ',' + space;
+            }
+            first = false;
+            res += stringify(k, Object.assign({ ...params }, { recursion: params.recursion - 1 }));
+            res += ':' + stringify(v, Object.assign({ ...params }, { recursion: params.recursion - 1 }));
+        }
+        return res + '}';
+    }
 
     if (Array.isArray(obj)) {
         // Array!
-        let res = '';
+        let res = '[';
+        let first = true;
         for (const value of obj) {
-            res += (res ? ',' : '[') + space;
+            if (!first) {
+                res += ',' + space;
+            }
+            first = false;
             res += stringify(value, Object.assign({ ...params }, { recursion: params.recursion - 1 }));
         }
-        return (res += space + ']');
+        return res + ']';
     }
     let res = '{';
+    let first = true;
     for (const name in obj) {
-        if (res.length > 1) {
-            res += ',';
+        if (!first) {
+            res += ',' + space;
         }
-        res += space + name + ':';
-        res += stringify(obj[name], Object.assign({ ...params }, { recursion: params.recursion - 1 })) + space;
+        first = false;
+        res += name + ':';
+        res += stringify(obj[name], Object.assign({ ...params }, { recursion: params.recursion - 1 }));
     }
-    return (res += '}');
+    return res + '}';
 }
 
 /**
