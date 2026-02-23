@@ -161,7 +161,7 @@ export function iterableEntries(value: any): IterableIterator<[string, any]> {
  * @param obj Any objects, strings, exceptions, errors, or number
  * @param params.space `''`, allows to configure space in the string representation
  * @param params.decimal `2`, allows to choose the number of decimal to display in the string representation
- * @param params.recursion `1`, recursion depth to stringify recursively every object value until this depth,
+ * @param params.recursion `2`, recursion depth to stringify recursively every object value until this depth,
  * beware if a value refers to a already parsed value an infinite loop will occur
  * @param params.noBin `false`, when set skip binary encoding and write inplace a bin-length information
  * @returns the final string representation
@@ -172,7 +172,7 @@ export function stringify(
     obj: any,
     params: { space?: string; decimal?: number; recursion?: number; noBin?: boolean } = {}
 ): string {
-    params = Object.assign({ space: ' ', decimal: 2, recursion: 1, noBin: false }, params);
+    params = Object.assign({ space: ' ', decimal: 2, recursion: 2, noBin: false }, params);
     if (obj == null) {
         return String(obj);
     }
