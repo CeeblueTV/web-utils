@@ -29,8 +29,9 @@ export class PlayerStats extends Loggable {
     playbackSpeed?: number;
     playbackRate?: number;
 
-    recvByteRate?: number; // Bps in reception
-    sendByteRate?: number; // Bps in sending
+    audioByteRate?: number; // current audio Bps
+    videoByteRate?: number; // current video Bps
+    dataByteRate?: number; // current data Bps
 
     videoTrackId?: number; // video track selected
     videoTrackBandwidth?: number; // video bandwidth currently playing
@@ -86,8 +87,9 @@ export class PlayerStats extends Loggable {
         if (this.bufferAmount != null) {
             cmcd.bl = this.bufferAmount; // Buffer Length
         }
-        if (this.recvByteRate != null) {
-            cmcd.mtp = this.recvByteRate; // Measured mtp CMCD throughput
+        if (this.audioByteRate != null || this.videoByteRate != null || this.dataByteRate != null) {
+            // Measured mtp CMCD throughput
+            cmcd.mtp = (this.audioByteRate ?? 0) + (this.videoByteRate ?? 0) + (this.dataByteRate ?? 0);
         }
         if (playBack != null) {
             cmcd.pr = Number(playBack.toFixed(2)); // Playback Rate
