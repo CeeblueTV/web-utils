@@ -45,6 +45,16 @@ describe('PlayerStats', () => {
             });
         });
 
+        it('should set mtp from dataByteRate when audio and video byte rates are missing', () => {
+            const stats = new PlayerStats();
+            stats.dataByteRate = 512;
+
+            const url = new URL('https://example.com/live/chunk.ts');
+            const cmcd = stats.toCmcd(url, 99);
+
+            expect(cmcd.mtp).toBe(512);
+        });
+
         it('should select the correct object type and bitrate for audio track', () => {
             const stats = new PlayerStats();
             stats.audioTrackId = 2;
