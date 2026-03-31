@@ -15,7 +15,8 @@ describe('PlayerStats', () => {
             stats.protocol = 'HLS';
             stats.bufferAmount = 1000;
             stats.playbackRate = 1.5;
-            stats.recvByteRate = 50_000;
+            stats.audioByteRate = 60;
+            stats.videoByteRate = 1500;
             stats.waitingData = true;
             stats.stallCount = 3;
             stats.videoTrackId = 1;
@@ -37,7 +38,7 @@ describe('PlayerStats', () => {
                 br: 1500,
                 bs: true,
                 bl: 1000,
-                mtp: 50_000,
+                mtp: 1560,
                 pr: 1.5,
                 sf: 'h',
                 su: true
