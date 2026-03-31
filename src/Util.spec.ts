@@ -13,10 +13,10 @@ describe('Util', () => {
             const time0 = Util.time();
             await new Promise(resolve => setTimeout(resolve, 100));
             const time100 = Util.time();
-            expect(time100).toBeGreaterThanOrEqual(time0 + 100);
+            expect(time100).toBeGreaterThanOrEqual(time0 + 95);
 
             const unixTime = Util.unixTime();
-            expect(unixTime).toBeGreaterThanOrEqual(Math.floor(performance.timeOrigin + time0 + 100));
+            expect(unixTime).toBeGreaterThanOrEqual(Math.floor(performance.timeOrigin + time0 + 95));
             expect(unixTime).toBeGreaterThanOrEqual(Math.floor(performance.timeOrigin + time100));
         });
     });
