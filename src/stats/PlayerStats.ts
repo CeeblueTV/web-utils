@@ -6,6 +6,7 @@
 
 import * as CML from '@svta/common-media-library';
 import { Loggable } from '../Log';
+import * as Util from '../Util';
 
 /**
  * Collects variable names for player statistics metrics across different projects (e.g., wrts, webrtc).
@@ -51,36 +52,49 @@ export class PlayerStats extends Loggable {
     /**
      * Converts the current {@link PlayerStats} snapshot into a CMCD (Common Media Client Data) payload.
      * @param url - The full URL of the media object.
-     * @param trackId - The track ID for which to generate the CMCD payload.
+     * @param trackIds -Track Id to generate the CMCD payload, keep empty to relate an CMCD OTHER object.
      * @param prevStats - Optional previous {@link PlayerStats} snapshot to calculate deltas for incremental metrics since their last reset.
      * @returns A {@link CML.Cmcd} object representing the CMCD payload.
      */
-    toCmcd(url: URL, trackId: number, prevStats?: PlayerStats): CML.Cmcd {
+    toCmcd(url: URL, trackIds: Array<number>, prevStats?: PlayerStats): CML.Cmcd {
         const cmcd: CML.Cmcd = {};
         // Determine playback rate to use, preferring 'playbackRate' if available, otherwise falling back to 'playbackSpeed'
         const playBack = this.playbackRate ?? this.playbackSpeed;
 
-        // Object Type
-        if (trackId === this.audioTrackId) {
-            cmcd.ot = CML.CmcdObjectType.AUDIO;
-        } else if (trackId === this.videoTrackId) {
+        let hasVideo = false;
+        let hasAudio = false;
+        for (const trackId of trackIds) {
+            if (trackId === this.audioTrackId) {
+                hasAudio = true;
+            } else if (trackId === this.videoTrackId) {
+                hasVideo = true;
+            }
+        }
+
+        // Determine object type and set 'br' (bitrate): use audio, video, or sum of both depending on selected tracks
+        cmcd.br = (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0);
+        if (hasAudio) {
+            if (hasVideo) {
+                cmcd.ot = CML.CmcdObjectType.MUXED;
+            } else {
+                // just audio
+                cmcd.ot = CML.CmcdObjectType.AUDIO;
+                cmcd.br = this.audioTrackBandwidth ?? 0;
+            }
+        } else if (hasVideo) {
+            // just video
             cmcd.ot = CML.CmcdObjectType.VIDEO;
+            cmcd.br = this.videoTrackBandwidth ?? 0;
         } else {
             cmcd.ot = CML.CmcdObjectType.OTHER;
         }
+
         cmcd.st = CML.CmcdStreamType.LIVE; // Stream Type
-        cmcd.cid = url.pathname.split('/').pop(); // Content ID
+        cmcd.cid = Util.hash(url.pathname); // Content ID
         if (this.bufferAmount != null && playBack != null) {
             cmcd.dl = this.bufferAmount * playBack; // Deadline
         }
-        // br is computed to be only for video, or only audio track, or sum of both depending of if trackId matches either audio or video track IDs
-        if (trackId === this.videoTrackId) {
-            cmcd.br = this.videoTrackBandwidth ?? 0;
-        } else if (trackId === this.audioTrackId) {
-            cmcd.br = this.audioTrackBandwidth ?? 0;
-        } else {
-            cmcd.br = (this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0);
-        }
+
         if (this.stallCount != null) {
             cmcd.bs = this.stallCount - (prevStats?.stallCount ?? 0) > 0; // Buffer Starvation
         }

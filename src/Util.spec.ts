@@ -74,6 +74,14 @@ describe('Util', () => {
         });
     });
 
+    describe('hash', () => {
+        it('should return a deterministic 14-character hexadecimal hash', () => {
+            expect(Util.hash('Hello 😭')).toBe('127c8d5f428cf2');
+            expect(Util.hash('Hello 😭')).toBe(Util.hash('Hello 😭'));
+            expect(Util.hash('Hello 😭')).toMatch(/^[0-9a-f]{14}$/);
+        });
+    });
+
     describe('safePromise', () => {
         it('should resolve before timeout', async () => {
             const promise = new Promise(resolve => setTimeout(() => resolve('success'), 100));
