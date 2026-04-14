@@ -16,7 +16,7 @@ import { Loggable } from '../Log';
 export class PlayerStats extends Loggable {
     protocol?: string; // protocol: HLS, DASH, WRTS, HESP, SMOOTH
     currentTime?: number; // current time in ms
-    waitingData?: boolean;
+    buffering?: boolean; // true on startup or when rebuffering after a stall
 
     bufferAmount?: number; // buffer amount in ms
     latency?: number; // latency in ms
@@ -104,8 +104,8 @@ export class PlayerStats extends Loggable {
         if (proto != null) {
             cmcd.sf = (sfByProtocol[proto as keyof typeof sfByProtocol] ?? 'o') as CML.CmcdStreamingFormat; // Streaming Format
         }
-        if (this.waitingData != null) {
-            cmcd.su = this.waitingData; // Startup
+        if (this.buffering != null) {
+            cmcd.su = this.buffering; // Startup
         }
         return cmcd;
     }

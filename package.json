@@ -20,7 +20,7 @@
         "build": "rollup -c",
         "build:es5": "rollup -c --format umd",
         "build:docs": "typedoc index.ts",
-        "test": "vitest",
+        "test": "vitest --run",
         "test:coverage": "vitest --run --coverage",
         "lint": "eslint . && prettier --check .",
         "eslint": "eslint --fix .",
@@ -32,8 +32,8 @@
     },
     "simple-git-hooks": {
         "pre-commit": "npx lint-staged",
-        "pre-push": "npm run build",
-        "prepare-commit-msg": "npx --no -- commitlint --edit $1"
+        "pre-push": "npm run build && npm run test && npm run build:docs",
+        "commit-msg": "npx --no -- commitlint --edit $1"
     },
     "author": "Ceeblue B.V.",
     "license": "AGPL-3.0-or-later",
