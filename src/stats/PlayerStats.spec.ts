@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import * as CML from '@svta/common-media-library';
 import { PlayerStats } from './PlayerStats';
+import * as Util from '../Util';
 
 describe('PlayerStats', () => {
     describe('toCmcd', () => {
@@ -28,12 +29,12 @@ describe('PlayerStats', () => {
             prev.stallCount = 2;
 
             const url = new URL('https://example.com/live/manifest.m3u8?token=abc');
-            const cmcd = stats.toCmcd(url, 1, prev);
+            const cmcd = stats.toCmcd(url, [1], prev);
 
             expect(cmcd).toMatchObject({
                 ot: CML.CmcdObjectType.VIDEO,
                 st: CML.CmcdStreamType.LIVE,
-                cid: 'manifest.m3u8',
+                cid: Util.hash(url.pathname),
                 dl: 1500,
                 br: 1500,
                 bs: true,
@@ -50,7 +51,7 @@ describe('PlayerStats', () => {
             stats.dataByteRate = 512;
 
             const url = new URL('https://example.com/live/chunk.ts');
-            const cmcd = stats.toCmcd(url, 99);
+            const cmcd = stats.toCmcd(url, [99]);
 
             expect(cmcd.mtp).toBe(512);
         });
@@ -63,10 +64,24 @@ describe('PlayerStats', () => {
             stats.videoTrackBandwidth = 1800;
 
             const url = new URL('https://example.com/live/chunk.ts');
-            const cmcd = stats.toCmcd(url, 2);
+            const cmcd = stats.toCmcd(url, [2]);
 
             expect(cmcd.ot).toBe(CML.CmcdObjectType.AUDIO);
             expect(cmcd.br).toBe(96);
+        });
+
+        it('should use MUXED object type and combined bitrate when audio and video tracks are both selected', () => {
+            const stats = new PlayerStats();
+            stats.audioTrackId = 2;
+            stats.audioTrackBandwidth = 96;
+            stats.videoTrackId = 1;
+            stats.videoTrackBandwidth = 1800;
+
+            const url = new URL('https://example.com/live/chunk.ts');
+            const cmcd = stats.toCmcd(url, [1, 2]);
+
+            expect(cmcd.ot).toBe(CML.CmcdObjectType.MUXED);
+            expect(cmcd.br).toBe(96 + 1800);
         });
 
         it('should sum bitrates and use OTHER object type when trackId does not match', () => {
@@ -77,7 +92,7 @@ describe('PlayerStats', () => {
             stats.videoTrackBandwidth = 1800;
 
             const url = new URL('https://example.com/live/chunk.ts');
-            const cmcd = stats.toCmcd(url, 99);
+            const cmcd = stats.toCmcd(url, [99]);
 
             expect(cmcd.ot).toBe(CML.CmcdObjectType.OTHER);
             expect(cmcd.br).toBe(96 + 1800);
@@ -90,7 +105,7 @@ describe('PlayerStats', () => {
             stats.bufferAmount = 1000;
 
             const url = new URL('https://example.com/v/seg.ts');
-            const cmcd = stats.toCmcd(url, 1);
+            const cmcd = stats.toCmcd(url, [1]);
 
             expect(cmcd.pr).toBe(1.23);
             expect(cmcd.dl).toBe(1234);
@@ -102,7 +117,7 @@ describe('PlayerStats', () => {
             stats.bufferAmount = 500;
 
             const url = new URL('https://example.com/v/seg.ts');
-            const cmcd = stats.toCmcd(url, 1);
+            const cmcd = stats.toCmcd(url, [1]);
 
             expect(cmcd.pr).toBe(2);
             expect(cmcd.dl).toBe(1000);
@@ -113,25 +128,25 @@ describe('PlayerStats', () => {
 
             const dash = new PlayerStats();
             dash.protocol = 'DASH';
-            expect(dash.toCmcd(url, 1).sf).toBe('d');
+            expect(dash.toCmcd(url, [1]).sf).toBe('d');
 
             const smooth = new PlayerStats();
             smooth.protocol = 'smooth';
-            expect(smooth.toCmcd(url, 1).sf).toBe('s');
+            expect(smooth.toCmcd(url, [1]).sf).toBe('s');
 
             const unknown = new PlayerStats();
             unknown.protocol = 'WRTS';
-            expect(unknown.toCmcd(url, 1).sf).toBe('o');
+            expect(unknown.toCmcd(url, [1]).sf).toBe('o');
         });
 
         it('should not set optional fields when their source values are undefined', () => {
             const stats = new PlayerStats();
             const url = new URL('https://example.com/live/seg.ts');
-            const cmcd = stats.toCmcd(url, 1);
+            const cmcd = stats.toCmcd(url, [1]);
 
             expect(cmcd).toMatchObject({
                 st: CML.CmcdStreamType.LIVE,
-                cid: 'seg.ts'
+                cid: Util.hash(url.pathname)
             });
             expect(cmcd).not.toHaveProperty('sf');
             expect(cmcd).not.toHaveProperty('su');
@@ -149,7 +164,7 @@ describe('PlayerStats', () => {
             prev.stallCount = 5;
 
             const url = new URL('https://example.com/live/seg.ts');
-            const cmcd = stats.toCmcd(url, 1, prev);
+            const cmcd = stats.toCmcd(url, [1], prev);
 
             expect(cmcd.bs).toBe(false);
         });
