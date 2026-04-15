@@ -25,12 +25,16 @@ export class BinaryWriter {
     private _view?: DataView;
     private _isConst?: boolean;
 
-    constructor(dataOrSize: BufferSource | number = 64, offset: number = 0, length?: number) {
+    constructor(
+        dataOrSize: ArrayBufferLike | ArrayBufferView<ArrayBufferLike> | number = 64,
+        offset: number = 0,
+        length?: number
+    ) {
         if (typeof dataOrSize == 'number') {
             // allocate new buffer
             this._data = new Uint8Array(dataOrSize);
             this._size = 0;
-        } else if ('buffer' in dataOrSize) {
+        } else if (ArrayBuffer.isView(dataOrSize)) {
             // append to existing data!
             this._data = new Uint8Array(dataOrSize.buffer, dataOrSize.byteOffset, dataOrSize.byteLength);
             this._size = dataOrSize.byteLength;
@@ -64,15 +68,14 @@ export class BinaryWriter {
      * Write binary data
      * @param data
      */
-    write(data: ArrayLike<number> | BufferSource | string): BinaryWriter {
-        let bin: Uint8Array | ArrayLike<number>;
+    write(data: ArrayLike<number> | ArrayBufferLike | ArrayBufferView<ArrayBufferLike> | string): BinaryWriter {
+        let bin: ArrayLike<number>;
         if (typeof data === 'string') {
-            // Convertit la chaîne en Uint8Array
             bin = Util.toBin(data);
-        } else if (data instanceof ArrayBuffer) {
+        } else if (ArrayBuffer.isView(data)) {
+            bin = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+        } else if ('byteLength' in data) {
             bin = new Uint8Array(data);
-        } else if ('buffer' in data) {
-            bin = new Uint8Array(data.buffer, data.byteOffset ?? 0, data.byteLength);
         } else {
             bin = data;
         }

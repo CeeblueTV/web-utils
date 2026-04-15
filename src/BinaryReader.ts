@@ -14,9 +14,10 @@ export class BinaryReader {
     private _position: number;
     private _view: DataView;
 
-    constructor(data: BufferSource) {
-        this._data =
-            'buffer' in data ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength) : new Uint8Array(data);
+    constructor(data: ArrayBufferLike | ArrayBufferView<ArrayBufferLike>) {
+        this._data = ArrayBuffer.isView(data)
+            ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+            : new Uint8Array(data);
         this._size = this._data.byteLength;
         this._position = 0;
         this._view = new DataView(this._data.buffer, this._data.byteOffset, this._size);
