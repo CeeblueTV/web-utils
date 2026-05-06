@@ -60,6 +60,28 @@ describe('Util', () => {
         });
     });
 
+    describe('normalizeStringArray', () => {
+        it('should normalize a string into an array', () => {
+            expect(Util.normalizeStringArray('value')).toEqual(['value']);
+        });
+
+        it('should keep non-empty values from an array', () => {
+            expect(Util.normalizeStringArray(['value1', '', 'value2'])).toEqual(['value1', 'value2']);
+        });
+
+        it('should return an empty string fallback by default when no values are provided', () => {
+            expect(Util.normalizeStringArray()).toEqual(['']);
+            expect(Util.normalizeStringArray('')).toEqual(['']);
+            expect(Util.normalizeStringArray([''])).toEqual(['']);
+        });
+
+        it('should omit the empty string fallback when includeEmpty is false', () => {
+            expect(Util.normalizeStringArray(undefined, false)).toEqual([]);
+            expect(Util.normalizeStringArray('', false)).toEqual([]);
+            expect(Util.normalizeStringArray([''], false)).toEqual([]);
+        });
+    });
+
     describe('toBin', () => {
         it('should convert string to UTF-8 representation in Uint8Array', () => {
             const str = 'Hello 😭';

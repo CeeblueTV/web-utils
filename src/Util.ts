@@ -23,6 +23,23 @@ const _perf = performance; // to increase x10 now performance!
 export const EMPTY_FUNCTION = () => {};
 
 /**
+ * Converts a string or an array of strings into a normalized string array.
+ * Empty string values are filtered out. When no value remains, an optional empty-string
+ * fallback can be returned to simplify cartesian-product style expansions.
+ *
+ * @param value The string or array of strings to normalize.
+ * @param includeEmpty If true, returns `['']` when no non-empty values are provided.
+ * @returns A normalized array of strings.
+ */
+export function normalizeStringArray(value?: string | string[], includeEmpty: boolean = true): string[] {
+    if (!value) {
+        return includeEmpty ? [''] : [];
+    }
+    const values = Array.isArray(value) ? value.filter(Boolean) : [value];
+    return values.length ? values : includeEmpty ? [''] : [];
+}
+
+/**
  * Returns an efficient timestamp in milliseconds elapsed since performance.timeOrigin,
  * representing the start of the current JavaScript execution context.
  *
