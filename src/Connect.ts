@@ -7,6 +7,112 @@ import * as Util from './Util';
 import { NetAddress } from './NetAddress';
 import { log } from './Log';
 
+export type TemplateConfigurationsParams = {
+    audioContentTypes?: string | string[];
+    videoContentTypes?: string | string[];
+    audioRobustness?: string | string[];
+    videoRobustness?: string | string[];
+    baseConfiguration?: MediaKeySystemConfiguration;
+};
+
+/**
+ * Helper to create DRM configuration templates from common audio/video content types and robustness values.
+ * It generates all combinations of audio and video content types and robustness values, and merges them with
+ * the base configuration if provided.
+ *
+ * The returned configurations can be assigned to {@link KeySystem.templateConfigurations}. When the caller
+ * omits capability content types, a DRM implementation may enrich those templates with stream metadata before
+ * passing the final configurations to `requestMediaKeySystemAccess()`.
+ *
+ * @returns An array of MediaKeySystemConfiguration templates.
+ */
+export function createTemplateConfigurations(params: TemplateConfigurationsParams): MediaKeySystemConfiguration[] {
+    const audioContentTypes = Util.normalizeStringArray(params.audioContentTypes, false);
+    const videoContentTypes = Util.normalizeStringArray(params.videoContentTypes, false);
+    const requestedAudioRobustness = Util.normalizeStringArray(params.audioRobustness, false);
+    const requestedVideoRobustness = Util.normalizeStringArray(params.videoRobustness, false);
+
+    // If no content types are provided, we create a single configuration with robustness values only
+    if (
+        !audioContentTypes.length &&
+        !videoContentTypes.length &&
+        (requestedAudioRobustness.length > 0 || requestedVideoRobustness.length > 0)
+    ) {
+        return [
+            {
+                ...params.baseConfiguration,
+                ...(requestedAudioRobustness.length > 0 && {
+                    audioCapabilities: (requestedAudioRobustness.length ? requestedAudioRobustness : ['']).map(
+                        robustness => ({
+                            ...(robustness && { robustness })
+                        })
+                    )
+                }),
+                ...(requestedVideoRobustness.length > 0 && {
+                    videoCapabilities: (requestedVideoRobustness.length ? requestedVideoRobustness : ['']).map(
+                        robustness => ({
+                            ...(robustness && { robustness })
+                        })
+                    )
+                })
+            }
+        ];
+    }
+
+    const configurations: MediaKeySystemConfiguration[] = [];
+    const audioRobustness = audioContentTypes.length ? Util.normalizeStringArray(params.audioRobustness) : [''];
+    const videoRobustness = videoContentTypes.length ? Util.normalizeStringArray(params.videoRobustness) : [''];
+    const audioInputs = audioContentTypes.length ? audioContentTypes : [''];
+    const videoInputs = videoContentTypes.length ? videoContentTypes : [''];
+
+    // Create a complete configuration for each combination of audio/video content types and robustness values
+    for (const audioContentType of audioInputs) {
+        for (const videoContentType of videoInputs) {
+            for (const audioR of audioRobustness) {
+                for (const videoR of videoRobustness) {
+                    const audioCapabilities = audioContentType
+                        ? [{ contentType: audioContentType, ...(audioR && { robustness: audioR }) }]
+                        : undefined;
+                    const videoCapabilities = videoContentType
+                        ? [{ contentType: videoContentType, ...(videoR && { robustness: videoR }) }]
+                        : undefined;
+
+                    const config: MediaKeySystemConfiguration = {
+                        ...params.baseConfiguration,
+                        ...(audioCapabilities && { audioCapabilities }),
+                        ...(videoCapabilities && { videoCapabilities })
+                    };
+                    configurations.push(config);
+                }
+            }
+        }
+    }
+
+    return configurations.length ? configurations : [{ ...params.baseConfiguration }];
+}
+
+export type DRMRequestConfig =
+    | string
+    | {
+          url: string;
+          /**
+           * The additional HTTP headers to send to the license server
+           */
+          headers?: Record<string, string | null>;
+      };
+
+export type DRMCertificateConfig =
+    | string
+    | Uint8Array
+    | {
+          url?: string;
+          data?: Uint8Array;
+          /**
+           * The additional HTTP headers to send to the certificate server
+           */
+          headers?: Record<string, string | null>;
+      };
+
 /**
  * Parameters of a key system for encrypted streams (DRM)
  *
@@ -18,31 +124,23 @@ export type KeySystem =
     | string
     | {
           /**
-           * The license server URL
+           * The license URL or configuration for the key system. If it's a string, it's the URL of the license server.
            */
-          licenseUrl: string;
+          license?: DRMRequestConfig;
           /**
-           * The certificate URL if needed (for FairPlay)
+           * The certificate URL if needed (for FairPlay) or the certificate data as Uint8Array.
+           */
+          certificate?: DRMCertificateConfig;
+          /**
+           * Optional MediaKeySystemConfiguration templates.
            *
-           * Or directly the certificate
-           */
-          certificate?: string | Uint8Array;
-          /**
-           * The additional HTTP headers to send to the license server
-           */
-          headers?: Record<string, string>;
-          /**
-           * Audio robustness level
+           * If metadata is available, a DRM implementation may enrich capabilities that do not define `contentType`
+           * before calling `requestMediaKeySystemAccess()`. Explicit `contentType` values provided by the user should
+           * take precedence over metadata-derived values.
            *
-           * A list of robustness levels, prioritized by the order of the array.
+           * If metadata is not available, these configurations are expected to be complete enough to be used as-is.
            */
-          audioRobustness?: string[];
-          /**
-           * Video robustness level
-           *
-           * A list of robustness levels, prioritized by the order of the array.
-           */
-          videoRobustness?: string[];
+          templateConfigurations?: MediaKeySystemConfiguration[];
       };
 
 /**
