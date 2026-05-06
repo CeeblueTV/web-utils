@@ -301,5 +301,15 @@ describe('Connect', () => {
                 }
             ]);
         });
+
+        it('should return the base configuration when no template inputs are provided', () => {
+            const configurations = createTemplateConfigurations({
+                baseConfiguration: {
+                    persistentState: 'optional'
+                }
+            });
+
+            expect(configurations).toEqual([{ persistentState: 'optional' }]);
+        });
     });
 });

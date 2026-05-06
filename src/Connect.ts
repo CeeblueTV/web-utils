@@ -32,28 +32,23 @@ export function createTemplateConfigurations(params: TemplateConfigurationsParam
     const requestedAudioRobustness = Util.normalizeStringArray(params.audioRobustness, false);
     const requestedVideoRobustness = Util.normalizeStringArray(params.videoRobustness, false);
 
-    // If no content types are provided, we create a single configuration with robustness values only
-    if (
-        !audioContentTypes.length &&
-        !videoContentTypes.length &&
-        (requestedAudioRobustness.length > 0 || requestedVideoRobustness.length > 0)
-    ) {
+    if (!audioContentTypes.length && !videoContentTypes.length) {
+        if (!requestedAudioRobustness.length && !requestedVideoRobustness.length) {
+            return params.baseConfiguration ? [{ ...params.baseConfiguration }] : [{}];
+        }
+        // If no content types are provided, we create a single configuration with robustness values only
         return [
             {
                 ...params.baseConfiguration,
                 ...(requestedAudioRobustness.length > 0 && {
-                    audioCapabilities: (requestedAudioRobustness.length ? requestedAudioRobustness : ['']).map(
-                        robustness => ({
-                            ...(robustness && { robustness })
-                        })
-                    )
+                    audioCapabilities: requestedAudioRobustness.map(robustness => ({
+                        ...(robustness && { robustness })
+                    }))
                 }),
                 ...(requestedVideoRobustness.length > 0 && {
-                    videoCapabilities: (requestedVideoRobustness.length ? requestedVideoRobustness : ['']).map(
-                        robustness => ({
-                            ...(robustness && { robustness })
-                        })
-                    )
+                    videoCapabilities: requestedVideoRobustness.map(robustness => ({
+                        ...(robustness && { robustness })
+                    }))
                 })
             }
         ];
@@ -88,7 +83,7 @@ export function createTemplateConfigurations(params: TemplateConfigurationsParam
         }
     }
 
-    return configurations.length ? configurations : [{ ...params.baseConfiguration }];
+    return configurations;
 }
 
 export type DRMRequestConfig =
