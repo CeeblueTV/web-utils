@@ -7,7 +7,13 @@ import * as Util from './Util';
 import { NetAddress } from './NetAddress';
 import { log } from './Log';
 
-export type TemplateConfigurationsParams = {
+/**
+ * Parameters of the createMediaKeySystemConfigurations helper function
+ *
+ * These parameters allow to write concise configurations for encrypted streams by specifying
+ * common audio/video content types, robustness values, and a base configuration.
+ */
+export type MediaKeySystemConfigurationParams = {
     audioContentTypes?: string | string[];
     videoContentTypes?: string | string[];
     audioRobustness?: string | string[];
@@ -16,17 +22,36 @@ export type TemplateConfigurationsParams = {
 };
 
 /**
- * Helper to create DRM configuration templates from common audio/video content types and robustness values.
+ * Helper to create the MediaKeySystem.configuration from :
+ *  - common audio/video content types
+ *  - base configuration (with other parameters)
+ *  - robustness values
  * It generates all combinations of audio and video content types and robustness values, and merges them with
  * the base configuration if provided.
  *
- * The returned configurations can be assigned to {@link KeySystem.templateConfigurations}. When the caller
+ * The returned configurations can be assigned to {@link MediaKeySystem.configurations}. When the caller
  * omits capability content types, a DRM implementation may enrich those templates with stream metadata before
  * passing the final configurations to `requestMediaKeySystemAccess()`.
  *
+ * Example of usage :
+ *
+ * ```ts
+ * const keySystem: MediaKeySystem = {
+ *      license: 'https://license-server.com/getLicense',
+ *      configurations: createMediaKeySystemConfigurations({
+ *          audioContentTypes: ['audio/mp4; codecs="mp4a.40.2"'],
+ *          videoContentTypes: ['video/mp4; codecs="avc1.640028"', 'video/mp4; codecs="hvc1.1.6.L93.B0"'],
+ *          audioRobustness: ['SW_SECURE_CRYPTO', 'HW_SECURE_CRYPTO'],
+ *          videoRobustness: ['SW_SECURE_DECODE', 'HW_SECURE_DECODE']
+ *      })
+ * };
+ * ```
+ *
  * @returns An array of MediaKeySystemConfiguration templates.
  */
-export function createTemplateConfigurations(params: TemplateConfigurationsParams): MediaKeySystemConfiguration[] {
+export function createMediaKeySystemConfigurations(
+    params: MediaKeySystemConfigurationParams
+): MediaKeySystemConfiguration[] {
     const audioContentTypes = Util.normalizeStringArray(params.audioContentTypes, false);
     const videoContentTypes = Util.normalizeStringArray(params.videoContentTypes, false);
     const requestedAudioRobustness = Util.normalizeStringArray(params.audioRobustness, false);
@@ -86,26 +111,19 @@ export function createTemplateConfigurations(params: TemplateConfigurationsParam
     return configurations;
 }
 
-export type DRMRequestConfig =
+export type MediaKeyLicense =
     | string
     | {
           url: string;
-          /**
-           * The additional HTTP headers to send to the license server
-           */
-          headers?: Record<string, string | null>;
+          headers?: Record<string, string>;
       };
 
-export type DRMCertificateConfig =
+export type MediaKeyCertificate =
     | string
     | Uint8Array
     | {
-          url?: string;
-          data?: Uint8Array;
-          /**
-           * The additional HTTP headers to send to the certificate server
-           */
-          headers?: Record<string, string | null>;
+          url: string;
+          headers?: Record<string, string>;
       };
 
 /**
@@ -115,27 +133,27 @@ export type DRMCertificateConfig =
  *
  * If the key system is an object, it's a key system configuration with more parameters.
  */
-export type KeySystem =
+export type MediaKeySystem =
     | string
     | {
           /**
            * The license URL or configuration for the key system. If it's a string, it's the URL of the license server.
            */
-          license?: DRMRequestConfig;
+          license?: MediaKeyLicense;
           /**
            * The certificate URL if needed (for FairPlay) or the certificate data as Uint8Array.
            */
-          certificate?: DRMCertificateConfig;
+          certificate?: MediaKeyCertificate;
           /**
-           * Optional MediaKeySystemConfiguration templates.
+           * Optional MediaKeySystemConfiguration[].
            *
-           * If metadata is available, a DRM implementation may enrich capabilities that do not define `contentType`
+           * If metadata is available, configuration may enrich capabilities that do not define `contentType`
            * before calling `requestMediaKeySystemAccess()`. Explicit `contentType` values provided by the user should
            * take precedence over metadata-derived values.
            *
            * If metadata is not available, these configurations are expected to be complete enough to be used as-is.
            */
-          templateConfigurations?: MediaKeySystemConfiguration[];
+          configurations?: MediaKeySystemConfiguration[];
       };
 
 /**
@@ -165,7 +183,7 @@ export type Params = {
      * Map of keys to content protection settings for encrypted streams
      * The key can be "com.apple.fps" for example for FairPlay
      */
-    contentProtection?: Record<string, KeySystem>;
+    contentProtection?: Record<string, MediaKeySystem>;
     /**
      * Optional media extension (mp4, flv, ts, rts), usefull for protocol like WebRTS which supports different container type.
      * When not set, it's also an output parameter for {@link defineMediaExt} to indicate what is the media type selected

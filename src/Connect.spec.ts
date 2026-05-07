@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { Type, Params, buildURL, createTemplateConfigurations, defineMediaExt } from './Connect';
+import { Type, Params, buildURL, createMediaKeySystemConfigurations, defineMediaExt } from './Connect';
 
 describe('Connect', () => {
     describe('defineMediaExt', () => {
@@ -198,20 +198,9 @@ describe('Connect', () => {
         });
     });
 
-    describe('createTemplateConfigurations', () => {
-        it('should preserve the KeySystem string shorthand in Params', () => {
-            const params: Params = {
-                endPoint: 'example.com',
-                contentProtection: {
-                    'com.microsoft.playready': 'https://license.example.com'
-                }
-            };
-
-            expect(params.contentProtection?.['com.microsoft.playready']).toBe('https://license.example.com');
-        });
-
+    describe('createMediaKeySystemConfigurations', () => {
         it('should build the cartesian product of content types and robustness values', () => {
-            const configurations = createTemplateConfigurations({
+            const configurations = createMediaKeySystemConfigurations({
                 audioContentTypes: ['audio/mp4; codecs="mp4a.40.2"'],
                 videoContentTypes: ['video/mp4; codecs="avc1.640028"', 'video/mp4; codecs="hvc1.1.6.L93.B0"'],
                 audioRobustness: ['SW_SECURE_CRYPTO', 'HW_SECURE_CRYPTO'],
@@ -232,7 +221,7 @@ describe('Connect', () => {
         });
 
         it('should omit empty robustness values', () => {
-            const configurations = createTemplateConfigurations({
+            const configurations = createMediaKeySystemConfigurations({
                 audioContentTypes: 'audio/mp4; codecs="mp4a.40.2"',
                 videoContentTypes: 'video/mp4; codecs="avc1.640028"'
             });
@@ -246,7 +235,7 @@ describe('Connect', () => {
         });
 
         it('should not duplicate video-only configurations when audio robustness is provided', () => {
-            const configurations = createTemplateConfigurations({
+            const configurations = createMediaKeySystemConfigurations({
                 videoContentTypes: 'video/mp4; codecs="avc1.640028"',
                 audioRobustness: ['SW_SECURE_CRYPTO', 'HW_SECURE_CRYPTO'],
                 videoRobustness: ['SW_SECURE_DECODE', 'HW_SECURE_DECODE']
@@ -267,7 +256,7 @@ describe('Connect', () => {
         });
 
         it('should create unresolved capability templates from robustness-only inputs', () => {
-            const configurations = createTemplateConfigurations({
+            const configurations = createMediaKeySystemConfigurations({
                 audioRobustness: ['A1', 'A2'],
                 videoRobustness: ['V1', 'V2']
             });
@@ -281,7 +270,7 @@ describe('Connect', () => {
         });
 
         it('should keep the base configuration on each generated entry', () => {
-            const configurations = createTemplateConfigurations({
+            const configurations = createMediaKeySystemConfigurations({
                 audioContentTypes: 'audio/mp4; codecs="mp4a.40.2"',
                 baseConfiguration: {
                     initDataTypes: ['cenc'],
@@ -303,7 +292,7 @@ describe('Connect', () => {
         });
 
         it('should return the base configuration when no template inputs are provided', () => {
-            const configurations = createTemplateConfigurations({
+            const configurations = createMediaKeySystemConfigurations({
                 baseConfiguration: {
                     persistentState: 'optional'
                 }
