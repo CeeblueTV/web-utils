@@ -52,10 +52,10 @@ export type MediaKeySystemConfigurationParams = {
 export function createMediaKeySystemConfigurations(
     params: MediaKeySystemConfigurationParams
 ): MediaKeySystemConfiguration[] {
-    const audioContentTypes = Util.normalizeStringArray(params.audioContentTypes, false);
-    const videoContentTypes = Util.normalizeStringArray(params.videoContentTypes, false);
-    const requestedAudioRobustness = Util.normalizeStringArray(params.audioRobustness, false);
-    const requestedVideoRobustness = Util.normalizeStringArray(params.videoRobustness, false);
+    const audioContentTypes = Util.toStringArray(params.audioContentTypes);
+    const videoContentTypes = Util.toStringArray(params.videoContentTypes);
+    const requestedAudioRobustness = Util.toStringArray(params.audioRobustness);
+    const requestedVideoRobustness = Util.toStringArray(params.videoRobustness);
 
     if (!audioContentTypes.length && !videoContentTypes.length) {
         if (!requestedAudioRobustness.length && !requestedVideoRobustness.length) {
@@ -80,8 +80,9 @@ export function createMediaKeySystemConfigurations(
     }
 
     const configurations: MediaKeySystemConfiguration[] = [];
-    const audioRobustness = audioContentTypes.length ? Util.normalizeStringArray(params.audioRobustness) : [''];
-    const videoRobustness = videoContentTypes.length ? Util.normalizeStringArray(params.videoRobustness) : [''];
+
+    const audioRobustness = audioContentTypes.length ? Util.toStringArray(params.audioRobustness, ['']) : [''];
+    const videoRobustness = videoContentTypes.length ? Util.toStringArray(params.videoRobustness, ['']) : [''];
     const audioInputs = audioContentTypes.length ? audioContentTypes : [''];
     const videoInputs = videoContentTypes.length ? videoContentTypes : [''];
 

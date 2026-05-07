@@ -60,25 +60,25 @@ describe('Util', () => {
         });
     });
 
-    describe('normalizeStringArray', () => {
+    describe('toStringArray', () => {
         it('should normalize a string into an array', () => {
-            expect(Util.normalizeStringArray('value')).toEqual(['value']);
+            expect(Util.toStringArray('value')).toEqual(['value']);
         });
 
         it('should keep non-empty values from an array', () => {
-            expect(Util.normalizeStringArray(['value1', '', 'value2'])).toEqual(['value1', 'value2']);
+            expect(Util.toStringArray(['value1', '', 'value2'])).toEqual(['value1', 'value2']);
         });
 
-        it('should return an empty string fallback by default when no values are provided', () => {
-            expect(Util.normalizeStringArray()).toEqual(['']);
-            expect(Util.normalizeStringArray('')).toEqual(['']);
-            expect(Util.normalizeStringArray([''])).toEqual(['']);
+        it('should return an empty array by default when no values are provided', () => {
+            expect(Util.toStringArray(undefined)).toEqual([]);
+            expect(Util.toStringArray('')).toEqual([]);
+            expect(Util.toStringArray([''])).toEqual([]);
         });
 
-        it('should omit the empty string fallback when includeEmpty is false', () => {
-            expect(Util.normalizeStringArray(undefined, false)).toEqual([]);
-            expect(Util.normalizeStringArray('', false)).toEqual([]);
-            expect(Util.normalizeStringArray([''], false)).toEqual([]);
+        it('should use the fallback array when provided', () => {
+            expect(Util.toStringArray(undefined, ['fallback'])).toEqual(['fallback']);
+            expect(Util.toStringArray('', ['fallback'])).toEqual(['fallback']);
+            expect(Util.toStringArray([''], ['fall', 'back'])).toEqual(['fall', 'back']);
         });
     });
 
