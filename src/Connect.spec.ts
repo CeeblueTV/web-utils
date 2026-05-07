@@ -234,7 +234,7 @@ describe('Connect', () => {
             ]);
         });
 
-        it('should not duplicate video-only configurations when audio robustness is provided', () => {
+        it('should preserve unresolved audio capabilities without duplicating video-only configurations', () => {
             const configurations = createMediaKeySystemConfigurations({
                 videoContentTypes: 'video/mp4; codecs="avc1.640028"',
                 audioRobustness: ['SW_SECURE_CRYPTO', 'HW_SECURE_CRYPTO'],
@@ -243,14 +243,39 @@ describe('Connect', () => {
 
             expect(configurations).toEqual([
                 {
+                    audioCapabilities: [{ robustness: 'SW_SECURE_CRYPTO' }, { robustness: 'HW_SECURE_CRYPTO' }],
                     videoCapabilities: [
                         { contentType: 'video/mp4; codecs="avc1.640028"', robustness: 'SW_SECURE_DECODE' }
                     ]
                 },
                 {
+                    audioCapabilities: [{ robustness: 'SW_SECURE_CRYPTO' }, { robustness: 'HW_SECURE_CRYPTO' }],
                     videoCapabilities: [
                         { contentType: 'video/mp4; codecs="avc1.640028"', robustness: 'HW_SECURE_DECODE' }
                     ]
+                }
+            ]);
+        });
+
+        it('should preserve unresolved video capabilities without duplicating audio-only configurations', () => {
+            const configurations = createMediaKeySystemConfigurations({
+                audioContentTypes: 'audio/mp4; codecs="mp4a.40.2"',
+                audioRobustness: ['SW_SECURE_CRYPTO', 'HW_SECURE_CRYPTO'],
+                videoRobustness: ['SW_SECURE_DECODE', 'HW_SECURE_DECODE']
+            });
+
+            expect(configurations).toEqual([
+                {
+                    audioCapabilities: [
+                        { contentType: 'audio/mp4; codecs="mp4a.40.2"', robustness: 'SW_SECURE_CRYPTO' }
+                    ],
+                    videoCapabilities: [{ robustness: 'SW_SECURE_DECODE' }, { robustness: 'HW_SECURE_DECODE' }]
+                },
+                {
+                    audioCapabilities: [
+                        { contentType: 'audio/mp4; codecs="mp4a.40.2"', robustness: 'HW_SECURE_CRYPTO' }
+                    ],
+                    videoCapabilities: [{ robustness: 'SW_SECURE_DECODE' }, { robustness: 'HW_SECURE_DECODE' }]
                 }
             ]);
         });

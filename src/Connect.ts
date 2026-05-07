@@ -83,6 +83,18 @@ export function createMediaKeySystemConfigurations(
 
     const audioRobustness = audioContentTypes.length ? Util.toStringArray(params.audioRobustness, ['']) : [''];
     const videoRobustness = videoContentTypes.length ? Util.toStringArray(params.videoRobustness, ['']) : [''];
+    const unresolvedAudioCapabilities =
+        requestedAudioRobustness.length > 0
+            ? requestedAudioRobustness.map(robustness => ({
+                  ...(robustness && { robustness })
+              }))
+            : undefined;
+    const unresolvedVideoCapabilities =
+        requestedVideoRobustness.length > 0
+            ? requestedVideoRobustness.map(robustness => ({
+                  ...(robustness && { robustness })
+              }))
+            : undefined;
     const audioInputs = audioContentTypes.length ? audioContentTypes : [''];
     const videoInputs = videoContentTypes.length ? videoContentTypes : [''];
 
@@ -93,10 +105,10 @@ export function createMediaKeySystemConfigurations(
                 for (const videoR of videoRobustness) {
                     const audioCapabilities = audioContentType
                         ? [{ contentType: audioContentType, ...(audioR && { robustness: audioR }) }]
-                        : undefined;
+                        : unresolvedAudioCapabilities;
                     const videoCapabilities = videoContentType
                         ? [{ contentType: videoContentType, ...(videoR && { robustness: videoR }) }]
-                        : undefined;
+                        : unresolvedVideoCapabilities;
 
                     const config: MediaKeySystemConfiguration = {
                         ...params.baseConfiguration,
