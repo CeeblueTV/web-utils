@@ -22,7 +22,7 @@ export type MediaKeySystemConfigurationParams = {
 };
 
 /**
- * Helper to create the MediaKeySystem.configuration from :
+ * Helper to create the MediaKeySystem.configurations from :
  *  - common audio/video content types
  *  - base configuration (with other parameters)
  *  - robustness values
@@ -66,14 +66,10 @@ export function createMediaKeySystemConfigurations(
             {
                 ...params.baseConfiguration,
                 ...(requestedAudioRobustness.length > 0 && {
-                    audioCapabilities: requestedAudioRobustness.map(robustness => ({
-                        ...(robustness && { robustness })
-                    }))
+                    audioCapabilities: requestedAudioRobustness.map(robustness => ({ ...{ robustness } }))
                 }),
                 ...(requestedVideoRobustness.length > 0 && {
-                    videoCapabilities: requestedVideoRobustness.map(robustness => ({
-                        ...(robustness && { robustness })
-                    }))
+                    videoCapabilities: requestedVideoRobustness.map(robustness => ({ ...{ robustness } }))
                 })
             }
         ];
