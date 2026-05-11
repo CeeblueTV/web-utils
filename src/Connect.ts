@@ -8,41 +8,161 @@ import { NetAddress } from './NetAddress';
 import { log } from './Log';
 
 /**
+ * Parameters of the createMediaKeySystemConfigurations helper function
+ *
+ * These parameters allow to write concise configurations for encrypted streams by specifying
+ * common audio/video content types, robustness values, and a base configuration.
+ */
+export type MediaKeySystemConfigurationParams = {
+    audioContentTypes?: string | string[];
+    videoContentTypes?: string | string[];
+    audioRobustness?: string | string[];
+    videoRobustness?: string | string[];
+    baseConfiguration?: MediaKeySystemConfiguration;
+};
+
+/**
+ * Helper to create the MediaKeySystem.configurations from :
+ *  - common audio/video content types
+ *  - base configuration (with other parameters)
+ *  - robustness values
+ * It generates all combinations of audio and video content types and robustness values, and merges them with
+ * the base configuration if provided.
+ *
+ * The returned configurations can be assigned to {@link MediaKeySystem.configurations}. When the caller
+ * omits capability content types, a DRM implementation may enrich those templates with stream metadata before
+ * passing the final configurations to `requestMediaKeySystemAccess()`.
+ *
+ * Example of usage :
+ *
+ * ```ts
+ * const keySystem: MediaKeySystem = {
+ *      license: 'https://license-server.com/getLicense',
+ *      configurations: createMediaKeySystemConfigurations({
+ *          audioContentTypes: ['audio/mp4; codecs="mp4a.40.2"'],
+ *          videoContentTypes: ['video/mp4; codecs="avc1.640028"', 'video/mp4; codecs="hvc1.1.6.L93.B0"'],
+ *          audioRobustness: ['SW_SECURE_CRYPTO', 'HW_SECURE_CRYPTO'],
+ *          videoRobustness: ['SW_SECURE_DECODE', 'HW_SECURE_DECODE']
+ *      })
+ * };
+ * ```
+ *
+ * @returns An array of MediaKeySystemConfiguration templates.
+ */
+export function createMediaKeySystemConfigurations(
+    params: MediaKeySystemConfigurationParams
+): MediaKeySystemConfiguration[] {
+    const audioContentTypes = Util.toStringArray(params.audioContentTypes);
+    const videoContentTypes = Util.toStringArray(params.videoContentTypes);
+    const requestedAudioRobustness = Util.toStringArray(params.audioRobustness);
+    const requestedVideoRobustness = Util.toStringArray(params.videoRobustness);
+
+    if (!audioContentTypes.length && !videoContentTypes.length) {
+        if (!requestedAudioRobustness.length && !requestedVideoRobustness.length) {
+            return params.baseConfiguration ? [{ ...params.baseConfiguration }] : [{}];
+        }
+        // If no content types are provided, we create a single configuration with robustness values only
+        return [
+            {
+                ...params.baseConfiguration,
+                ...(requestedAudioRobustness.length > 0 && {
+                    audioCapabilities: requestedAudioRobustness.map(robustness => ({ ...{ robustness } }))
+                }),
+                ...(requestedVideoRobustness.length > 0 && {
+                    videoCapabilities: requestedVideoRobustness.map(robustness => ({ ...{ robustness } }))
+                })
+            }
+        ];
+    }
+
+    const configurations: MediaKeySystemConfiguration[] = [];
+
+    const audioRobustness = audioContentTypes.length ? Util.toStringArray(params.audioRobustness, ['']) : [''];
+    const videoRobustness = videoContentTypes.length ? Util.toStringArray(params.videoRobustness, ['']) : [''];
+    const unresolvedAudioCapabilities =
+        requestedAudioRobustness.length > 0
+            ? requestedAudioRobustness.map(robustness => ({
+                  ...(robustness && { robustness })
+              }))
+            : undefined;
+    const unresolvedVideoCapabilities =
+        requestedVideoRobustness.length > 0
+            ? requestedVideoRobustness.map(robustness => ({
+                  ...(robustness && { robustness })
+              }))
+            : undefined;
+    const audioInputs = audioContentTypes.length ? audioContentTypes : [''];
+    const videoInputs = videoContentTypes.length ? videoContentTypes : [''];
+
+    // Create a complete configuration for each combination of audio/video content types and robustness values
+    for (const audioContentType of audioInputs) {
+        for (const videoContentType of videoInputs) {
+            for (const audioR of audioRobustness) {
+                for (const videoR of videoRobustness) {
+                    const audioCapabilities = audioContentType
+                        ? [{ contentType: audioContentType, ...(audioR && { robustness: audioR }) }]
+                        : unresolvedAudioCapabilities;
+                    const videoCapabilities = videoContentType
+                        ? [{ contentType: videoContentType, ...(videoR && { robustness: videoR }) }]
+                        : unresolvedVideoCapabilities;
+
+                    const config: MediaKeySystemConfiguration = {
+                        ...params.baseConfiguration,
+                        ...(audioCapabilities && { audioCapabilities }),
+                        ...(videoCapabilities && { videoCapabilities })
+                    };
+                    configurations.push(config);
+                }
+            }
+        }
+    }
+
+    return configurations;
+}
+
+export type MediaKeyLicense =
+    | string
+    | {
+          url: string;
+          headers?: Record<string, string>;
+      };
+
+export type MediaKeyCertificate =
+    | string
+    | Uint8Array
+    | {
+          url: string;
+          headers?: Record<string, string>;
+      };
+
+/**
  * Parameters of a key system for encrypted streams (DRM)
  *
  * If the key system is a string, it's the URL of the license server.
  *
  * If the key system is an object, it's a key system configuration with more parameters.
  */
-export type KeySystem =
+export type MediaKeySystem =
     | string
     | {
           /**
-           * The license server URL
+           * The license URL or configuration for the key system. If it's a string, it's the URL of the license server.
            */
-          licenseUrl: string;
+          license?: MediaKeyLicense;
           /**
-           * The certificate URL if needed (for FairPlay)
+           * The certificate URL if needed (for FairPlay) or the certificate data as Uint8Array.
+           */
+          certificate?: MediaKeyCertificate;
+          /**
+           * Optional MediaKeySystemConfiguration[].
            *
-           * Or directly the certificate
-           */
-          certificate?: string | Uint8Array;
-          /**
-           * The additional HTTP headers to send to the license server
-           */
-          headers?: Record<string, string>;
-          /**
-           * Audio robustness level
+           * If metadata is available, configuration may enrich capabilities that do not define `contentType`
+           * before calling `requestMediaKeySystemAccess()`. Explicit `contentType` values provided by the user should
+           * take precedence over metadata-derived values.
            *
-           * A list of robustness levels, prioritized by the order of the array.
+           * If metadata is not available, these configurations are expected to be complete enough to be used as-is.
            */
-          audioRobustness?: string[];
-          /**
-           * Video robustness level
-           *
-           * A list of robustness levels, prioritized by the order of the array.
-           */
-          videoRobustness?: string[];
+          configurations?: MediaKeySystemConfiguration[];
       };
 
 /**
@@ -72,7 +192,7 @@ export type Params = {
      * Map of keys to content protection settings for encrypted streams
      * The key can be "com.apple.fps" for example for FairPlay
      */
-    contentProtection?: Record<string, KeySystem>;
+    contentProtection?: Record<string, MediaKeySystem>;
     /**
      * Optional media extension (mp4, flv, ts, rts), usefull for protocol like WebRTS which supports different container type.
      * When not set, it's also an output parameter for {@link defineMediaExt} to indicate what is the media type selected

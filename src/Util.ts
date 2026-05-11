@@ -23,6 +23,23 @@ const _perf = performance; // to increase x10 now performance!
 export const EMPTY_FUNCTION = () => {};
 
 /**
+ * Converts a string or array of strings into a normalized string array.
+ * Empty string values are filtered out. When no non-empty value remains,
+ * `defaultValue` is returned (defaults to `[]`).
+ *
+ * @param value The string or array of strings to normalize.
+ * @param defaultValue Returned when `value` is empty or contains only empty strings.
+ * @returns A normalized array of strings.
+ */
+export function toStringArray(value: string | string[] | undefined, defaultValue: string[] = []): string[] {
+    if (!value) {
+        return defaultValue;
+    }
+    const values = (Array.isArray(value) ? value : [value]).filter(Boolean);
+    return values.length ? values : defaultValue;
+}
+
+/**
  * Returns an efficient timestamp in milliseconds elapsed since performance.timeOrigin,
  * representing the start of the current JavaScript execution context.
  *

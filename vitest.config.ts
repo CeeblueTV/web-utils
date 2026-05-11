@@ -10,8 +10,9 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         coverage: {
+            include: ['src/**/*.ts'],
             provider: 'istanbul',
-            reporter: ['lcov'],
+            reporter: ['text', 'lcov'],
             reportsDirectory: './coverage',
             reportOnFailure: true
         },
