@@ -14,6 +14,19 @@ Then [import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modu
  ```javascript
 import { Util, ILog } from '@ceeblue/web-utils';
 ```
+
+The package root (`@ceeblue/web-utils`) is pure logic — no DOM, no CSS. DOM/canvas components live in the `ui` subpath:
+```javascript
+import { UIMetrics, UITimeline } from '@ceeblue/web-utils/ui';
+```
+
+It also ships the Ceeblue design-system stylesheets. Import the layers you need, in order — each consumes the ones before it:
+```javascript
+import '@ceeblue/web-utils/tokens.css';        // design tokens (colors, radii, fonts, themes)
+import '@ceeblue/web-utils/foundation.css';    // reset + base typography + scrollbars
+import '@ceeblue/web-utils/components.css';     // app shell + generic UI components
+```
+The stylesheets use [cascade layers](https://developer.mozilla.org/en-US/docs/Web/CSS/@layer) (`ceeblue.tokens` < `ceeblue.foundation` < `ceeblue.components`), so downstream styles override them without specificity hacks.
 > [!IMPORTANT]
 > 
 > If your project uses TypeScript, it is recommended that you set target: "ES6" in your configuration to match our use of ES6 features and ensure that your build will succeed (for those requiring a backward-compatible UMD version, a local build is recommended).
@@ -36,12 +49,14 @@ import { Util, ILog } from '@ceeblue/web-utils';
 
 1. [Clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) this repository
 2. Got to the `web-utils` folder and run `npm install` to install the packages dependencies.
-3. Run `npm run build`. The output will be five files placed in the **/dist/** folder:
+3. Run `npm run build`. The output is placed in the **/dist/** folder, one set of files per entry point — `web-utils` (the pure-logic root) and `ui/web-utils-ui` (the DOM/canvas components):
    - **web-utils.d.ts** Typescript definitions file
    - **web-utils.js**: Bundled JavaScript library
    - **web-utils.js.map**: Source map that associates the bundled library with the original source files
    - **web-utils.min.js** Minified version of the library, optimized for size
    - **web-utils.min.js.map** Source map that associates the minified library with the original source files
+   - the same five **ui/web-utils-ui.\*** files for the `@ceeblue/web-utils/ui` entry
+   - **css/tokens.css**, **css/foundation.css** and **css/components.css** design-system stylesheets
 
 ```
 git clone https://github.com/CeeblueTV/web-utils.git

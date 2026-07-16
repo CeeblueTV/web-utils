@@ -13,13 +13,34 @@
     "bugs": {
         "url": "https://github.com/CeeblueTV/web-utils/issues"
     },
+    "files": [
+        "dist"
+    ],
     "main": "dist/web-utils.js",
+    "module": "dist/web-utils.js",
     "types": "dist/web-utils.d.ts",
     "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/web-utils.d.ts",
+            "default": "./dist/web-utils.js"
+        },
+        "./ui": {
+            "types": "./dist/ui/web-utils-ui.d.ts",
+            "default": "./dist/ui/web-utils-ui.js"
+        },
+        "./tokens.css": "./dist/css/tokens.css",
+        "./foundation.css": "./dist/css/foundation.css",
+        "./components.css": "./dist/css/components.css",
+        "./package.json": "./package.json"
+    },
+    "sideEffects": [
+        "**/*.css"
+    ],
     "scripts": {
         "build": "rollup -c",
         "build:es5": "rollup -c --format umd",
-        "build:docs": "typedoc --tsconfig tsconfig.json index.ts",
+        "build:docs": "typedoc --tsconfig tsconfig.json index.ts src/ui/index.ts",
         "test": "vitest --run",
         "test:coverage": "vitest --run --coverage",
         "lint": "eslint . && prettier --check .",

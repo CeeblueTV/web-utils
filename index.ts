@@ -20,11 +20,13 @@ export { WebSocketReliable, WebSocketReliableError } from './src/WebSocketReliab
 export * as EpochTime from './src/EpochTime';
 export { LogLevel, ILog, Log, Loggable, log } from './src/Log';
 export { PlayerStats } from './src/stats/PlayerStats';
+export * as Media from './src/Media';
 // Export the Common Media Library as the CML namespace.
 // Example usage: CML.Cmcd, CML.CmcdStreamingFormat, etc.
 export * as CML from '@svta/common-media-library';
 
-export { UIMetrics } from './src/ui/UIMetrics';
+// UI components (UIMetrics, UITimeline) live in the `@ceeblue/web-utils/ui` subpath entry
+// (see src/ui/index.ts) to keep this root entry free of DOM/CSS code.
 
 const __lib__version__ = '?'; // will be replaced on building by project version
 

@@ -1,0 +1,71 @@
+/*
+ * Copyright 2024 Ceeblue B.V.
+ * This file is part of https://github.com/CeeblueTV/web-utils which is released under GNU Affero General Public License.
+ * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
+ */
+
+/*
+ * Design tokens for the Ceeblue UI: color palette, radii, fonts, transitions and the light/dark
+ * theme maps. This is the base of the cascade — the `ceeblue.tokens` layer sits below foundation
+ * and components (components.css), so every downstream layer can read these custom properties via
+ * var() and override them without specificity hacks. Load this before components.css.
+ */
+@layer ceeblue.tokens, ceeblue.foundation, ceeblue.components;
+
+@layer ceeblue.tokens {
+    :root {
+        --accent:   #78b5bf;
+        --accent-b: #5e97a1;
+        --accent-d: color-mix(in srgb, var(--accent) 18%, transparent);
+
+        --ok:   #28a745;
+        --warn: #e6a817;
+        --err:  #c0392b;
+
+        /* "input changed / danger" red — brighter than --err, used for auto-tuned fields */
+        --danger:   #e53935;
+        --danger-d: color-mix(in srgb, var(--danger) 18%, transparent);
+
+        --r-sm:   6px;
+        --r-md:   12px;
+        --r-lg:   16px;
+        --r-pill: 999px;
+
+        --f-body: 'Poppins', system-ui, sans-serif;
+        --f-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+        --t: 160ms ease;
+    }
+
+    html[data-theme="light"] {
+        --bg:       #ffffff;
+        --bg-s:     #f4f7fb;
+        --bg-e:     #ebeff5;
+        --bg-h:     #dde4ee;
+        --border:   rgba(103,114,148,.18);
+        --border-s: rgba(103,114,148,.38);
+        --txt:      #3d4459;
+        --txt-2:    #677294;
+        --txt-m:    #9ba4bc;
+        --navy:     #051441;
+        --shadow:   0 4px 24px rgba(61,68,89,.10);
+        --shadow-modal: 0 24px 64px rgba(5,20,65,.18);
+        --modal-back: rgba(5,20,65,.35);
+    }
+
+    html[data-theme="dark"] {
+        --bg:       #0f1622;
+        --bg-s:     #161e2d;
+        --bg-e:     #1d2638;
+        --bg-h:     #283248;
+        --border:   rgba(255,255,255,.08);
+        --border-s: rgba(255,255,255,.18);
+        --txt:      #e7ecf3;
+        --txt-2:    #aab4c8;
+        --txt-m:    #6c7894;
+        --navy:     #ffffff;
+        --shadow:   0 4px 24px rgba(0,0,0,.45);
+        --shadow-modal: 0 24px 64px rgba(0,0,0,.6);
+        --modal-back: rgba(0,0,0,.55);
+    }
+}

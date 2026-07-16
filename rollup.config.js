@@ -13,9 +13,27 @@ import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import { dts } from 'rollup-plugin-dts';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
+import { copyFileSync, mkdirSync } from 'node:fs';
 
-const input = 'index.ts';
-const output = 'dist/web-utils';
+// Copy the hand-authored stylesheets into dist/ so they publish to npm and are reachable on CDNs
+// (jsDelivr, unpkg) at dist/<name>.css, next to the bundles.
+const copyStyles = () => ({
+    name: 'copy-styles',
+    writeBundle() {
+        mkdirSync('dist/css', { recursive: true });
+        for (const file of ['tokens.css', 'foundation.css', 'components.css']) {
+            copyFileSync('styles/' + file, 'dist/css/' + file);
+        }
+    }
+});
+
+// Public entry points, each emitted as a self-contained bundle in dist/:
+//  - index: pure logic (no DOM, no CSS) → `@ceeblue/web-utils`
+//  - ui/index: DOM/canvas components → `@ceeblue/web-utils/ui`
+const entries = [
+    { input: 'index.ts', out: 'dist/web-utils' },
+    { input: 'src/ui/index.ts', out: 'dist/ui/web-utils-ui' } // distinct basename: safe if files get flattened
+];
 
 export default args => {
     let target;
@@ -51,16 +69,17 @@ export default args => {
         throw new Error('Version is undefined or not a string.');
     }
 
-    return [
+    // Each entry yields three sequential builds: bundle → minify the bundle → type definitions.
+    return entries.flatMap((entry, i) => [
         {
             // Transpile and bundle the code
-            input,
+            input: entry.input,
             output: {
                 name: process.env.npm_package_name,
                 format, // iife, es, cjs, umd, amd, system
                 compact: true,
                 sourcemap: true,
-                file: output + '.js'
+                file: entry.out + '.js'
             },
             plugins: [
                 replace({
@@ -69,28 +88,30 @@ export default args => {
                 }),
                 eslint(),
                 typescript({ target, downlevelIteration }),
-                nodeResolve()
+                nodeResolve(),
+                // Emit the stylesheets once, alongside the first bundle.
+                ...(i === 0 ? [copyStyles()] : [])
             ]
         },
         {
             // Minify the bundled code
-            input: output + '.js',
+            input: entry.out + '.js',
             output: {
                 compact: true,
                 sourcemap: true,
-                file: output + '.min.js'
+                file: entry.out + '.min.js'
             },
             plugins: [terser()],
             context: 'window' // Useful for ES5 builds, ensures 'this' refers to 'window' in a browser context
         },
         {
             // Generate type definitions
-            input,
+            input: entry.input,
             output: {
                 compact: true,
-                file: output + '.d.ts'
+                file: entry.out + '.d.ts'
             },
             plugins: [dts()]
         }
-    ];
+    ]);
 };
