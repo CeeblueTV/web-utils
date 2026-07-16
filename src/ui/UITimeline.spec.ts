@@ -120,29 +120,42 @@ describe('UITimeline', () => {
         expect(audio[0]).toMatchObject({ track: '2', seq: '0', frames: '3', bytes: '30' });
     });
 
-    it('splits sequences by reception gaps when there is no video track', () => {
+    it('groups a no-video track into fixed 2s media-time buckets (fallback GOP)', () => {
         clock.now = 1000;
         const tl = make();
         tl.pushData(3, sample(0, { bytes: 10 }));
-        tl.pushData(3, sample(20, { bytes: 10 }));
-        tl.pushData(3, sample(40, { bytes: 10 })); // same instant → one sequence
-        clock.now = 1100; // gap well past the ~30ms threshold → new sequence
-        tl.pushData(3, sample(60, { bytes: 10 }));
-        tl.pushData(3, sample(80, { bytes: 10 }));
+        tl.pushData(3, sample(500, { bytes: 10 }));
+        tl.pushData(3, sample(1900, { bytes: 10 })); // all within the first 2s bucket
+        tl.pushData(3, sample(2100, { bytes: 10 })); // crosses into the next bucket → new sequence
+        tl.pushData(3, sample(3000, { bytes: 10 }));
 
         const data = rows(tl).filter(r => r.type === '0');
         expect(data).toHaveLength(2);
-        expect(data.map(r => r.frames)).toEqual(['3', '2']); // sorted by reception time
+        expect(data.map(r => r.frames)).toEqual(['3', '2']);
+    });
+
+    it('keeps a steady audio-only cadence in one sequence (no one-sliver-per-sample)', () => {
+        clock.now = 1000;
+        const tl = make();
+        // ~45ms Opus/AAC-like frames: reception gaps exceed the old ~30ms heuristic threshold, but
+        // they all fall inside one 2s media-time bucket, so they group into a single sequence.
+        for (let i = 0; i < 10; ++i) {
+            clock.now += 45;
+            tl.pushAudio(2, sample(i * 45, { bytes: 10 }));
+        }
+        const audio = rows(tl).filter(r => r.type === '1');
+        expect(audio).toHaveLength(1);
+        expect(audio[0].frames).toBe('10');
     });
 
     it('trims old sequences past MAX_SEQUENCES', () => {
         const prev = UITimeline.MAX_SEQUENCES;
         UITimeline.MAX_SEQUENCES = 2;
         try {
+            clock.now = 1000;
             const tl = make();
             for (let i = 0; i < 5; ++i) {
-                clock.now = 1000 + i * 100; // each push is a fresh gapped sequence
-                tl.pushData(3, sample(i * 20, { bytes: 10 }));
+                tl.pushData(3, sample(i * 2000, { bytes: 10 })); // each in its own 2s bucket → 5 sequences
             }
             expect(rows(tl).filter(r => r.type === '0')).toHaveLength(2);
         } finally {
