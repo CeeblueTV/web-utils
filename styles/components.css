@@ -244,36 +244,6 @@
 
     .tab-body { padding-top: 10px; }
 
-    /* ── Stats ── */
-    .stats-list {
-        background: transparent;
-        list-style: none;
-        padding: 0; margin: 0;
-        display: block;
-        width: 100%;
-    }
-    /* UIMetrics injects <svg> elements directly as children — force them full-width */
-    .stats-list > svg {
-        display: block;
-        width: 100%;
-        border-bottom: 1px solid var(--border);
-        font-family: var(--f-mono);
-        font-size: 12px;
-        fill: var(--txt);
-    }
-    .stats-list > svg:last-child { border-bottom: none; }
-
-    .stats-actions {
-        display: flex; gap: 12px; align-items: center; justify-content: center;
-        margin-top: 12px; padding-top: 10px;
-        border-top: 1px solid var(--border);
-    }
-    .stats-actions img {
-        cursor: pointer; opacity: .4; height: 26px;
-        transition: opacity var(--t);
-    }
-    .stats-actions img:hover { opacity: .9; }
-
     /* ── Messages ── */
     .msg-box {
         background: var(--bg-s);
@@ -374,5 +344,57 @@
                 'bufmin  bufmax';
         }
         .row2 { grid-template-columns: 1fr; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════════
+       Custom Ceeblue UI widgets (src/ui) — kept apart from the generic kit above.
+       These back the JS-driven DOM/canvas components (UIMetrics, UITimeline); their
+       TypeScript reads these rules/tokens at runtime, so edit them with the widgets.
+       ═══════════════════════════════════════════════════════════════════════════════ */
+
+    /* ── UIMetrics (real-time stats graph) ── */
+    .stats-list {
+        background: transparent;
+        list-style: none;
+        padding: 0; margin: 0;
+        display: block;
+        width: 100%;
+    }
+    /* UIMetrics injects <svg> elements directly as children — force them full-width */
+    .stats-list > svg {
+        display: block;
+        width: 100%;
+        border-bottom: 1px solid var(--border);
+        font-family: var(--f-mono);
+        font-size: 12px;
+        fill: var(--txt);
+    }
+    .stats-list > svg:last-child { border-bottom: none; }
+
+    .stats-actions {
+        display: flex; gap: 12px; align-items: center; justify-content: center;
+        margin-top: 12px; padding-top: 10px;
+        border-top: 1px solid var(--border);
+    }
+    .stats-actions img {
+        cursor: pointer; opacity: .4; height: 26px;
+        transition: opacity var(--t);
+    }
+    .stats-actions img:hover { opacity: .9; }
+
+    /* ── UITimeline (reception timeline canvas) ──
+       The widget draws to <canvas> and can't consume CSS, so it resolves these values via
+       getComputedStyle at runtime (see src/ui/UITimeline.ts) and styles its tooltip/canvas
+       inline from the shared tokens above. Only the categorical track palette is specific to
+       this widget — override --track-N to recolor the per-track rows. */
+    :root {
+        --track-1: #78b5bf;
+        --track-2: #e6a817;
+        --track-3: #9b7ede;
+        --track-4: #6fbf8b;
+        --track-5: #df7e7e;
+        --track-6: #7e9cdf;
+        --track-7: #c98bd0;
+        --track-8: #b5a06f;
     }
 }

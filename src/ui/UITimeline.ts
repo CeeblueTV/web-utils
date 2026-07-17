@@ -88,6 +88,12 @@ type Hit = { x0: number; x1: number; y0: number; y1: number; s: Sequence; r: Row
  *                  is overlaid as a colored edge, and an optional playhead marks the playback time.
  *  - `'reception'` — position by wall-clock arrival, so late / slow tracks stand out.
  *
+ * Styling follows the Ceeblue design system: when the design-system stylesheets are loaded it resolves
+ * the design tokens (`--accent`, `--ok`/`--warn`/`--err`, `--txt`, `--border`, `--f-body`/`--f-mono`
+ * and the tooltip surface tokens from `tokens.css`, plus the widget-specific `--track-N` palette from
+ * `components.css`) at render time and tracks the light/dark theme; without the stylesheets it falls
+ * back to a built-in dark palette, so the widget stays self-contained.
+ *
  * @example
  * const timeline = new UITimeline(document.getElementById('timeline'));
  * timeline.getMediaTime = () => player.currentTime * 1000; // optional playhead (ms)
@@ -165,6 +171,10 @@ export class UITimeline {
     private _container: HTMLElement;
     private _canvas: HTMLCanvasElement;
     private _tip: HTMLDivElement;
+    /** Track palette resolved from the `--track-N` tokens (cached; falls back to {@link PALETTE}). */
+    private _palette?: string[];
+    /** Signature of the last applied tooltip theme, to avoid rewriting its style every frame. */
+    private _tipSig = '';
 
     private _rows: Map<number, Row> = new Map();
     private _order?: Row[];
@@ -204,7 +214,8 @@ export class UITimeline {
      */
     constructor(container: HTMLElement) {
         this._container = container;
-        if (getComputedStyle(container).position === 'static') {
+        const cs = getComputedStyle(container);
+        if (cs.position === 'static') {
             container.style.position = 'relative';
         }
 
@@ -214,11 +225,12 @@ export class UITimeline {
 
         this._tip = document.createElement('div');
         this._tip.className = 'uitl-tip';
-        // Functional defaults; visual styling can be overridden via the `.uitl-tip` class.
+        // Functional layout only; the visual style (surface, text, border, shadow, radius, font) is
+        // pulled from the design tokens in _applyTipTheme so the tooltip follows the light/dark theme,
+        // and falls back to a dark card when the stylesheet is absent.
         this._tip.style.cssText =
-            'position:absolute;z-index:20;pointer-events:none;display:none;white-space:nowrap;' +
-            'padding:7px 9px;border-radius:6px;font:11px/1.5 ui-monospace,monospace;' +
-            'background:rgba(20,24,33,.96);color:#e7ecf3;box-shadow:0 4px 24px rgba(0,0,0,.45);';
+            'position:absolute;z-index:20;pointer-events:none;display:none;white-space:nowrap;padding:7px 9px;';
+        this._applyTipTheme(cs);
 
         container.append(this._canvas, this._tip);
 
@@ -330,7 +342,7 @@ export class UITimeline {
             row = {
                 id: track,
                 type,
-                color: PALETTE[this._rows.size % PALETTE.length],
+                color: this._colorFor(this._rows.size),
                 seqs: [],
                 seqCounter: 0
             };
@@ -397,9 +409,19 @@ export class UITimeline {
             return;
         }
 
+        // Canvas can't consume CSS, so resolve the design tokens to values here (each falling back to
+        // the built-in default when the stylesheet is absent). Read once per frame off a single computed
+        // style, and keep the DOM tooltip in sync with the same theme.
         const style = getComputedStyle(this._container);
-        const colTxt = style.color || '#888';
-        const colGrid = 'rgba(128,128,128,.22)';
+        const colTxt = this._var(style, '--txt', style.color || '#888');
+        const colGrid = this._var(style, '--border', 'rgba(128,128,128,.22)');
+        const accent = this._var(style, '--accent', ACCENT);
+        const okCol = this._var(style, '--ok', HEALTH_OK);
+        const warnCol = this._var(style, '--warn', HEALTH_WARN);
+        const errCol = this._var(style, '--err', HEALTH_ERR);
+        const fBody = this._var(style, '--f-body', 'sans-serif');
+        const fMono = this._var(style, '--f-mono', 'ui-monospace,monospace');
+        this._applyTipTheme(style);
 
         const dpr = root.devicePixelRatio || 1;
         const ROW_H = 34;
@@ -427,7 +449,7 @@ export class UITimeline {
         if (!rows.length || !this._hasData) {
             ctx.fillStyle = colTxt;
             ctx.globalAlpha = 0.5;
-            ctx.font = 'italic 12px sans-serif';
+            ctx.font = 'italic 12px ' + fBody;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
             ctx.fillText('Waiting for media…', 12, cssH / 2);
@@ -479,7 +501,7 @@ export class UITimeline {
 
         // Grid + axis labels
         ctx.textBaseline = 'middle';
-        ctx.font = '10px ui-monospace,monospace';
+        ctx.font = '10px ' + fMono;
         const ticks = 6;
         for (let i = 0; i <= ticks; ++i) {
             const v = winA + (span * i) / ticks;
@@ -512,10 +534,10 @@ export class UITimeline {
             ctx.fillRect(2, y, 3, ROW_H);
             ctx.fillStyle = colTxt;
             ctx.textAlign = 'left';
-            ctx.font = '600 11px sans-serif';
+            ctx.font = '600 11px ' + fBody;
             ctx.fillText(Media.typeToString(r.type).toUpperCase(), 11, y + 11);
             ctx.globalAlpha = 0.6;
-            ctx.font = '10px ui-monospace,monospace';
+            ctx.font = '10px ' + fMono;
             ctx.fillText('#' + r.id, 11, y + 24);
             ctx.globalAlpha = 1;
 
@@ -530,7 +552,7 @@ export class UITimeline {
                 const w = Math.max(2, xb - xa);
                 // Reception health: how long the sequence took to arrive vs its media duration.
                 const ratio = (s.recvEnd - s.recvStart) / Math.max(1, s.dtsEnd - s.dtsStart);
-                const health = ratio < 1.2 ? HEALTH_OK : ratio < 2 ? HEALTH_WARN : HEALTH_ERR;
+                const health = ratio < 1.2 ? okCol : ratio < 2 ? warnCol : errCol;
                 // Fill by reception health in both axes (consistent with the legend); the track color
                 // stays as a thin left edge so each row keeps its identity.
                 ctx.globalAlpha = 0.85;
@@ -546,7 +568,7 @@ export class UITimeline {
                     // the sequence number is in the hover tooltip.
                     ctx.fillStyle = '#fff';
                     ctx.textAlign = 'center';
-                    ctx.font = '600 11px ui-monospace,monospace';
+                    ctx.font = '600 11px ' + fMono;
                     ctx.fillText(String(s.frames), xa + w / 2, y + ROW_H / 2);
                 }
                 hits.push({ x0: xa, x1: xa + w, y0: y, y1: y + ROW_H, s, r });
@@ -559,7 +581,7 @@ export class UITimeline {
             const ct = this.getMediaTime();
             if (ct != null && ct >= winA && ct <= winB) {
                 const lx = xOf(ct);
-                ctx.strokeStyle = HEALTH_ERR;
+                ctx.strokeStyle = errCol;
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
                 ctx.moveTo(lx, TOP);
@@ -587,13 +609,13 @@ export class UITimeline {
         const wx0 = ovXOf(Math.max(dataMin, winA));
         const wx1 = ovXOf(Math.min(dataMax, winB));
         ctx.globalAlpha = navActive ? 1 : 0.65;
-        ctx.fillStyle = ACCENT;
+        ctx.fillStyle = accent;
         this._roundRect(ctx, wx0, ovY0, Math.max(6, wx1 - wx0), OV_H, OV_H / 2);
         ctx.fill();
         ctx.globalAlpha = 1;
         // Start / end labels, only while navigating (keeps the resting state quiet)
         if (navActive) {
-            ctx.font = '9px ui-monospace,monospace';
+            ctx.font = '9px ' + fMono;
             ctx.fillStyle = colTxt;
             ctx.globalAlpha = 0.8;
             ctx.textBaseline = 'middle';
@@ -607,6 +629,42 @@ export class UITimeline {
             ctx.fillText(media ? (dataMax / 1000).toFixed(1) + 's' : 'now', plotX1 - 6, ovY0 + OV_H / 2);
             ctx.globalAlpha = 1;
         }
+    }
+
+    /** Read a CSS custom property off a resolved style, falling back when it is unset. */
+    private _var(style: CSSStyleDeclaration, name: string, fallback: string): string {
+        return style.getPropertyValue(name).trim() || fallback;
+    }
+
+    /** Resolve the n-th track color from the `--track-N` tokens (cached; falls back to {@link PALETTE}). */
+    private _colorFor(index: number): string {
+        if (!this._palette) {
+            const style = getComputedStyle(this._container);
+            this._palette = PALETTE.map((def, i) => this._var(style, `--track-${i + 1}`, def));
+        }
+        return this._palette[index % this._palette.length];
+    }
+
+    /** Apply the design-token theme (surface, text, border, shadow, radius, font) to the DOM tooltip. */
+    private _applyTipTheme(style: CSSStyleDeclaration) {
+        const bg = this._var(style, '--bg-s', 'rgba(20,24,33,.96)');
+        const txt = this._var(style, '--txt', '#e7ecf3');
+        const border = this._var(style, '--border-s', 'rgba(255,255,255,.12)');
+        const shadow = this._var(style, '--shadow', '0 4px 24px rgba(0,0,0,.45)');
+        const radius = this._var(style, '--r-sm', '6px');
+        const mono = this._var(style, '--f-mono', 'ui-monospace,monospace');
+        const sig = [bg, txt, border, shadow, radius, mono].join('|');
+        if (sig === this._tipSig) {
+            return; // theme unchanged — skip the DOM write
+        }
+        this._tipSig = sig;
+        const s = this._tip.style;
+        s.background = bg;
+        s.color = txt;
+        s.border = '1px solid ' + border;
+        s.boxShadow = shadow;
+        s.borderRadius = radius;
+        s.font = '11px/1.5 ' + mono;
     }
 
     private _roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
