@@ -89,8 +89,8 @@ type Hit = { x0: number; x1: number; y0: number; y1: number; s: Sequence; r: Row
  *  - `'reception'` — position by wall-clock arrival, so late / slow tracks stand out.
  *
  * Styling follows the Ceeblue design system: when the design-system stylesheets are loaded it resolves
- * the design tokens (`--accent`, `--ok`/`--warn`/`--err`, `--txt`, `--border`, `--f-body`/`--f-mono`
- * and the tooltip surface tokens from `tokens.css`, plus the widget-specific `--track-N` palette from
+ * the design tokens (`--cb-accent`, `--cb-ok`/`--cb-warn`/`--cb-err`, `--cb-txt`, `--cb-border`, `--cb-f-body`/`--cb-f-mono`
+ * and the tooltip surface tokens from `tokens.css`, plus the widget-specific `--cb-track-N` palette from
  * `components.css`) at render time and tracks the light/dark theme; without the stylesheets it falls
  * back to a built-in dark palette, so the widget stays self-contained.
  *
@@ -171,7 +171,7 @@ export class UITimeline {
     private _container: HTMLElement;
     private _canvas: HTMLCanvasElement;
     private _tip: HTMLDivElement;
-    /** Track palette resolved from the `--track-N` tokens (cached; falls back to {@link PALETTE}). */
+    /** Track palette resolved from the `--cb-track-N` tokens (cached; falls back to {@link PALETTE}). */
     private _palette?: string[];
     /** Signature of the last applied tooltip theme, to avoid rewriting its style every frame. */
     private _tipSig = '';
@@ -220,11 +220,11 @@ export class UITimeline {
         }
 
         this._canvas = document.createElement('canvas');
-        this._canvas.className = 'uitl-canvas';
+        this._canvas.className = 'cb-uitl-canvas';
         this._canvas.style.cssText = 'display:block;width:100%;cursor:grab;';
 
         this._tip = document.createElement('div');
-        this._tip.className = 'uitl-tip';
+        this._tip.className = 'cb-uitl-tip';
         // Functional layout only; the visual style (surface, text, border, shadow, radius, font) is
         // pulled from the design tokens in _applyTipTheme so the tooltip follows the light/dark theme,
         // and falls back to a dark card when the stylesheet is absent.
@@ -413,14 +413,14 @@ export class UITimeline {
         // the built-in default when the stylesheet is absent). Read once per frame off a single computed
         // style, and keep the DOM tooltip in sync with the same theme.
         const style = getComputedStyle(this._container);
-        const colTxt = this._var(style, '--txt', style.color || '#888');
-        const colGrid = this._var(style, '--border', 'rgba(128,128,128,.22)');
-        const accent = this._var(style, '--accent', ACCENT);
-        const okCol = this._var(style, '--ok', HEALTH_OK);
-        const warnCol = this._var(style, '--warn', HEALTH_WARN);
-        const errCol = this._var(style, '--err', HEALTH_ERR);
-        const fBody = this._var(style, '--f-body', 'sans-serif');
-        const fMono = this._var(style, '--f-mono', 'ui-monospace,monospace');
+        const colTxt = this._var(style, '--cb-txt', style.color || '#888');
+        const colGrid = this._var(style, '--cb-border', 'rgba(128,128,128,.22)');
+        const accent = this._var(style, '--cb-accent', ACCENT);
+        const okCol = this._var(style, '--cb-ok', HEALTH_OK);
+        const warnCol = this._var(style, '--cb-warn', HEALTH_WARN);
+        const errCol = this._var(style, '--cb-err', HEALTH_ERR);
+        const fBody = this._var(style, '--cb-f-body', 'sans-serif');
+        const fMono = this._var(style, '--cb-f-mono', 'ui-monospace,monospace');
         this._applyTipTheme(style);
 
         const dpr = root.devicePixelRatio || 1;
@@ -636,23 +636,23 @@ export class UITimeline {
         return style.getPropertyValue(name).trim() || fallback;
     }
 
-    /** Resolve the n-th track color from the `--track-N` tokens (cached; falls back to {@link PALETTE}). */
+    /** Resolve the n-th track color from the `--cb-track-N` tokens (cached; falls back to {@link PALETTE}). */
     private _colorFor(index: number): string {
         if (!this._palette) {
             const style = getComputedStyle(this._container);
-            this._palette = PALETTE.map((def, i) => this._var(style, `--track-${i + 1}`, def));
+            this._palette = PALETTE.map((def, i) => this._var(style, `--cb-track-${i + 1}`, def));
         }
         return this._palette[index % this._palette.length];
     }
 
     /** Apply the design-token theme (surface, text, border, shadow, radius, font) to the DOM tooltip. */
     private _applyTipTheme(style: CSSStyleDeclaration) {
-        const bg = this._var(style, '--bg-s', 'rgba(20,24,33,.96)');
-        const txt = this._var(style, '--txt', '#e7ecf3');
-        const border = this._var(style, '--border-s', 'rgba(255,255,255,.12)');
-        const shadow = this._var(style, '--shadow', '0 4px 24px rgba(0,0,0,.45)');
-        const radius = this._var(style, '--r-sm', '6px');
-        const mono = this._var(style, '--f-mono', 'ui-monospace,monospace');
+        const bg = this._var(style, '--cb-bg-s', 'rgba(20,24,33,.96)');
+        const txt = this._var(style, '--cb-txt', '#e7ecf3');
+        const border = this._var(style, '--cb-border-s', 'rgba(255,255,255,.12)');
+        const shadow = this._var(style, '--cb-shadow', '0 4px 24px rgba(0,0,0,.45)');
+        const radius = this._var(style, '--cb-r-sm', '6px');
+        const mono = this._var(style, '--cb-f-mono', 'ui-monospace,monospace');
         const sig = [bg, txt, border, shadow, radius, mono].join('|');
         if (sig === this._tipSig) {
             return; // theme unchanged — skip the DOM write

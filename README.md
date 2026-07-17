@@ -28,7 +28,7 @@ import '@ceeblue/web-utils/components.css';     // app shell + generic UI compon
 ```
 The stylesheets use [cascade layers](https://developer.mozilla.org/en-US/docs/Web/CSS/@layer) (`ceeblue.tokens` < `ceeblue.foundation` < `ceeblue.components`), so downstream styles override them without specificity hacks.
 
-The DOM/canvas components read these tokens at runtime — `UITimeline`, for instance, resolves `--accent`, `--ok`/`--warn`/`--err`, `--txt`, `--track-N`, the fonts and the tooltip surface tokens — so they follow your theme automatically when the stylesheets are loaded, and fall back to sensible built-in defaults when they aren't.
+All design-system custom properties and classes are namespaced with a `cb-` prefix (`--cb-accent`, `.cb-btn`, …) to avoid collisions with the host app or other libraries. The DOM/canvas components read these tokens at runtime — `UITimeline`, for instance, resolves `--cb-accent`, `--cb-ok`/`--cb-warn`/`--cb-err`, `--cb-txt`, `--cb-track-N`, the fonts and the tooltip surface tokens — so they follow your theme automatically when the stylesheets are loaded, and fall back to sensible built-in defaults when they aren't.
 > [!IMPORTANT]
 > 
 > If your project uses TypeScript, it is recommended that you set target: "ES6" in your configuration to match our use of ES6 features and ensure that your build will succeed (for those requiring a backward-compatible UMD version, a local build is recommended).
