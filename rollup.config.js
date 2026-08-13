@@ -13,17 +13,19 @@ import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import { dts } from 'rollup-plugin-dts';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
-import { copyFileSync, mkdirSync } from 'node:fs';
+import { transform as transformCss } from 'lightningcss';
 
-// Copy the hand-authored stylesheets into dist/ so they publish to npm and are reachable on CDNs
-// (jsDelivr, unpkg) at dist/<name>.css, next to the bundles.
-const copyStyles = () => ({
-    name: 'copy-styles',
-    writeBundle() {
-        mkdirSync('dist/css', { recursive: true });
-        for (const file of ['tokens.css', 'foundation.css', 'components.css']) {
-            copyFileSync('styles/' + file, 'dist/css/' + file);
+// Import `.css` files as strings, so a component can self-host a co-located, editable stylesheet:
+// edited as real CSS, minified by lightningcss at build time (comments, incl. the license header, are
+// dropped) and injected at runtime.
+const cssString = () => ({
+    name: 'css-string',
+    transform(code, id) {
+        if (!id.endsWith('.css')) {
+            return null;
         }
+        const { code: min } = transformCss({ filename: id, code: Buffer.from(code), minify: true });
+        return { code: `export default ${JSON.stringify(min.toString())};`, map: null };
     }
 });
 
@@ -32,7 +34,9 @@ const copyStyles = () => ({
 //  - ui/index: DOM/canvas components → `@ceeblue/web-utils/ui`
 const entries = [
     { input: 'index.ts', out: 'dist/web-utils' },
-    { input: 'src/ui/index.ts', out: 'dist/ui/web-utils-ui' } // distinct basename: safe if files get flattened
+    { input: 'src/ui/index.ts', out: 'dist/ui/web-utils-ui' }, // distinct basename: safe if files get flattened
+    { input: 'src/ui/timeline.ts', out: 'dist/ui/timeline' }, // <cb-timeline> custom element (self-registers on import)
+    { input: 'src/ui/metrics.ts', out: 'dist/ui/metrics' } // <cb-metrics> custom element (self-registers on import)
 ];
 
 export default args => {
@@ -70,7 +74,7 @@ export default args => {
     }
 
     // Each entry yields three sequential builds: bundle → minify the bundle → type definitions.
-    return entries.flatMap((entry, i) => [
+    return entries.flatMap(entry => [
         {
             // Transpile and bundle the code
             input: entry.input,
@@ -82,15 +86,14 @@ export default args => {
                 file: entry.out + '.js'
             },
             plugins: [
+                cssString(),
                 replace({
                     __lib__version__: "'" + version + "'",
                     preventAssignment: true
                 }),
                 eslint(),
                 typescript({ target, downlevelIteration }),
-                nodeResolve(),
-                // Emit the stylesheets once, alongside the first bundle.
-                ...(i === 0 ? [copyStyles()] : [])
+                nodeResolve()
             ]
         },
         {

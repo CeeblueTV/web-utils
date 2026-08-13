@@ -1,5 +1,5 @@
 {
-    "include": ["./index.ts", "./src/ui/index.ts"],
+    "include": ["./src/ui/css.d.ts", "./index.ts", "./src/ui/index.ts", "./src/ui/timeline.ts", "./src/ui/metrics.ts"],
     "compilerOptions": {
         "strictPropertyInitialization": true,
         "noImplicitAny": true,

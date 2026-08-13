@@ -29,13 +29,21 @@
             "types": "./dist/ui/web-utils-ui.d.ts",
             "default": "./dist/ui/web-utils-ui.js"
         },
-        "./tokens.css": "./dist/css/tokens.css",
-        "./foundation.css": "./dist/css/foundation.css",
-        "./components.css": "./dist/css/components.css",
+        "./ui/timeline": {
+            "types": "./dist/ui/timeline.d.ts",
+            "default": "./dist/ui/timeline.js"
+        },
+        "./ui/metrics": {
+            "types": "./dist/ui/metrics.d.ts",
+            "default": "./dist/ui/metrics.js"
+        },
         "./package.json": "./package.json"
     },
     "sideEffects": [
-        "**/*.css"
+        "**/timeline.js",
+        "**/timeline.min.js",
+        "**/metrics.js",
+        "**/metrics.min.js"
     ],
     "scripts": {
         "build": "rollup -c",
@@ -83,6 +91,7 @@
         "eslint-plugin-headers": "~1.0.4",
         "is-ci": "~3.0.0",
         "jsdom": "^26.0.0",
+        "lightningcss": "^1.33.0",
         "lint-staged": "~15.5.2",
         "prettier": "3.2.4",
         "rollup": "~3.30.0",

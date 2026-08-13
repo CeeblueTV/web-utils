@@ -88,11 +88,11 @@ type Hit = { x0: number; x1: number; y0: number; y1: number; s: Sequence; r: Row
  *                  is overlaid as a colored edge, and an optional playhead marks the playback time.
  *  - `'reception'` — position by wall-clock arrival, so late / slow tracks stand out.
  *
- * Styling follows the Ceeblue design system: when the design-system stylesheets are loaded it resolves
- * the design tokens (`--cb-accent`, `--cb-ok`/`--cb-warn`/`--cb-err`, `--cb-txt`, `--cb-border`, `--cb-f-body`/`--cb-f-mono`
- * and the tooltip surface tokens from `tokens.css`, plus the widget-specific `--cb-track-N` palette from
- * `components.css`) at render time and tracks the light/dark theme; without the stylesheets it falls
- * back to a built-in dark palette, so the widget stays self-contained.
+ * Styling follows the Ceeblue design system: when the `--cb-*` design tokens (from `@ceeblue/web-ui`)
+ * are present it resolves them at render time (`--cb-accent`, `--cb-ok`/`--cb-warn`/`--cb-err`,
+ * `--cb-txt`, `--cb-border`, `--cb-f-body`/`--cb-f-mono` and the tooltip surface tokens) and tracks
+ * the light/dark theme; without them it falls back to a built-in dark palette, so the widget stays
+ * self-contained. Per-track row colors default to a built-in palette, overridable via `--cb-track-1..8`.
  *
  * @example
  * const timeline = new UITimeline(document.getElementById('timeline'));
@@ -844,5 +844,78 @@ export class UITimeline {
         }
         this._tip.style.left = tx + 'px';
         this._tip.style.top = ty + 'px';
+    }
+}
+
+/**
+ * `<cb-timeline>` — a Web Component wrapping {@link UITimeline} in its own shadow root, so a page can
+ * embed it with a single tag and no build step. Register it with {@link defineTimeline} (or import the
+ * `@ceeblue/web-utils/ui/timeline` entry, which registers it for you). Styles are self-hosted; colors
+ * come from the `--cb-*` tokens on `:root` (custom properties cross the shadow boundary).
+ */
+export class CbTimelineElement extends HTMLElement {
+    static readonly observedAttributes = ['axis', 'window'];
+
+    private _tl?: UITimeline;
+
+    connectedCallback() {
+        if (this._tl) {
+            return;
+        }
+        const shadow = this.attachShadow({ mode: 'open' });
+        const style = document.createElement('style');
+        // Custom elements are display:inline by default — give the host a real box.
+        style.textContent = ':host{display:block;width:100%}.plot{position:relative;width:100%}';
+        const plot = document.createElement('div');
+        plot.className = 'plot';
+        shadow.append(style, plot);
+
+        this._tl = new UITimeline(plot);
+        const axis = this.getAttribute('axis');
+        if (axis) {
+            this._tl.axis = axis as UITimelineAxis;
+        }
+        const win = this.getAttribute('window');
+        if (win) {
+            this._tl.windowDuration = Number(win);
+        }
+    }
+
+    disconnectedCallback() {
+        this._tl?.destroy();
+        this._tl = undefined;
+    }
+
+    attributeChangedCallback(name: string, _oldValue: string | null, value: string | null) {
+        if (!this._tl || value == null) {
+            return;
+        }
+        if (name === 'axis') {
+            this._tl.axis = value as UITimelineAxis;
+        } else if (name === 'window') {
+            this._tl.windowDuration = Number(value);
+        }
+    }
+
+    /** The underlying widget, for reading state (e.g. {@link UITimeline.following}) or feeding samples. */
+    get timeline(): UITimeline | undefined {
+        return this._tl;
+    }
+
+    pushVideo(track: number, sample: Media.Sample) {
+        this._tl?.pushVideo(track, sample);
+    }
+    pushAudio(track: number, sample: Media.Sample) {
+        this._tl?.pushAudio(track, sample);
+    }
+    pushData(track: number, sample: Media.Sample) {
+        this._tl?.pushData(track, sample);
+    }
+}
+
+/** Register the `<cb-timeline>` custom element (idempotent). */
+export function defineTimeline() {
+    if (!customElements.get('cb-timeline')) {
+        customElements.define('cb-timeline', CbTimelineElement);
     }
 }

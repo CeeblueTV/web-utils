@@ -20,15 +20,26 @@ The package root (`@ceeblue/web-utils`) is pure logic — no DOM, no CSS. DOM/ca
 import { UIMetrics, UITimeline } from '@ceeblue/web-utils/ui';
 ```
 
-It also ships the Ceeblue design-system stylesheets. Import the layers you need, in order — each consumes the ones before it:
+The design system (tokens, base styles, generic component classes) lives in its own package, [`@ceeblue/web-ui`](https://github.com/CeeblueTV/web-ui). Load it alongside this one:
 ```javascript
-import '@ceeblue/web-utils/tokens.css';        // design tokens (colors, radii, fonts, themes)
-import '@ceeblue/web-utils/foundation.css';    // reset + base typography + scrollbars
-import '@ceeblue/web-utils/components.css';     // app shell + generic UI components
+import '@ceeblue/web-ui/styles.css';
 ```
-The stylesheets use [cascade layers](https://developer.mozilla.org/en-US/docs/Web/CSS/@layer) (`ceeblue.tokens` < `ceeblue.foundation` < `ceeblue.components`), so downstream styles override them without specificity hacks.
+There is **no dependency** between the two packages. The DOM/canvas components here self-host their own styles and reference the `--cb-*` design tokens by name (with built-in fallbacks), so they render standalone and pick up `web-ui`'s theme when it is present. Set `data-cb-theme="dark"` (or `"light"`) on `<html>` to choose a theme.
 
-All design-system custom properties and classes are namespaced with a `cb-` prefix (`--cb-accent`, `.cb-btn`, …) to avoid collisions with the host app or other libraries. The DOM/canvas components read these tokens at runtime — `UITimeline`, for instance, resolves `--cb-accent`, `--cb-ok`/`--cb-warn`/`--cb-err`, `--cb-txt`, `--cb-track-N`, the fonts and the tooltip surface tokens — so they follow your theme automatically when the stylesheets are loaded, and fall back to sensible built-in defaults when they aren't.
+For the simplest embed — one tag, no build step — import the widget you need; each entry registers its own custom element, so you load only what you use:
+```javascript
+import '@ceeblue/web-utils/ui/timeline'; // registers <cb-timeline>
+import '@ceeblue/web-utils/ui/metrics';  // registers <cb-metrics>
+```
+```html
+<cb-timeline axis="reception" window="10"></cb-timeline>
+<cb-metrics></cb-metrics>
+```
+…or straight from a CDN, with no build and no npm install at all:
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/@ceeblue/web-utils@8/dist/ui/timeline.min.js"></script>
+<cb-timeline></cb-timeline>
+```
 > [!IMPORTANT]
 > 
 > If your project uses TypeScript, it is recommended that you set target: "ES6" in your configuration to match our use of ES6 features and ensure that your build will succeed (for those requiring a backward-compatible UMD version, a local build is recommended).
@@ -51,14 +62,14 @@ All design-system custom properties and classes are namespaced with a `cb-` pref
 
 1. [Clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) this repository
 2. Got to the `web-utils` folder and run `npm install` to install the packages dependencies.
-3. Run `npm run build`. The output is placed in the **/dist/** folder, one set of files per entry point — `web-utils` (the pure-logic root) and `ui/web-utils-ui` (the DOM/canvas components):
+3. Run `npm run build`. The output is placed in the **/dist/** folder, one set of files per entry point — `web-utils` (the pure-logic root), `ui/web-utils-ui` (the DOM/canvas widgets) and `ui/timeline` + `ui/metrics` (the per-widget custom elements):
    - **web-utils.d.ts** Typescript definitions file
    - **web-utils.js**: Bundled JavaScript library
    - **web-utils.js.map**: Source map that associates the bundled library with the original source files
    - **web-utils.min.js** Minified version of the library, optimized for size
    - **web-utils.min.js.map** Source map that associates the minified library with the original source files
    - the same five **ui/web-utils-ui.\*** files for the `@ceeblue/web-utils/ui` entry
-   - **css/tokens.css**, **css/foundation.css** and **css/components.css** design-system stylesheets
+   - the same five **ui/timeline.\*** and **ui/metrics.\*** files, one set per per-widget custom-element entry (design-system CSS now lives in [`@ceeblue/web-ui`](https://github.com/CeeblueTV/web-ui))
 
 ```
 git clone https://github.com/CeeblueTV/web-utils.git
