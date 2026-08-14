@@ -22,10 +22,10 @@
 .cb-stats-list > svg {
     display: block;
     width: 100%;
-    border-bottom: 1px solid var(--cb-border);
-    font-family: var(--cb-f-mono);
+    border-bottom: 1px solid var(--cb-border, rgba(103, 114, 148, 0.18));
+    font-family: var(--cb-f-mono, ui-monospace, monospace);
     font-size: 12px;
-    fill: var(--cb-txt);
+    fill: var(--cb-txt, #3d4459);
 }
 
 .cb-stats-list > svg:last-child {
