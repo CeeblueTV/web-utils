@@ -5,7 +5,6 @@ on:
         types: [completed]
         branches: [main]
     workflow_dispatch:
-        branches: [main]
 permissions:
     contents: read # for checkout
 jobs:
@@ -17,14 +16,14 @@ jobs:
             id-token: write # to enable use of OIDC for npm trusted publishing
         name: release
         runs-on: ubuntu-latest
-        if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+        if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') }}
         steps:
             - name: generate token
               id: generate_token
-              uses: tibdex/github-app-token@v1
+              uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
               with:
-                  app_id: ${{ secrets.RELEASE_BOT_APP_ID }}
-                  private_key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+                  app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+                  private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
             - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
               with:
                   persist-credentials: false
