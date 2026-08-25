@@ -8,7 +8,7 @@ import headersPlugin from 'eslint-plugin-headers';
 
 export default [
     {
-        ignores: ['dist/**', 'docs/**']
+        ignores: ['dist/**', 'docs/**', 'coverage/**']
     },
     {
         files: ['eslint.config.js'],
