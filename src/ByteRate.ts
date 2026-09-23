@@ -82,15 +82,10 @@ export class ByteRate {
     addBytes(bytes: number): ByteRate {
         const time = Util.time();
         const lastSample = this.updateSamples(time)[this._samples.length - 1];
-        const lastTime = lastSample?.time ?? this._time;
-        if (time > lastTime) {
+        if (!lastSample || time > lastSample.time) {
             this._samples.push({ bytes, time, clip: false });
         } else {
             // no new duration => attach byte to last-one
-            if (!lastSample) {
-                // Ignore, was before our ByteRate scope !
-                return this;
-            }
             lastSample.bytes += bytes;
         }
         this._bytes += bytes;
@@ -158,6 +153,8 @@ export class ByteRate {
         }
 
         this._samples.splice(0, removes);
+        // Keep the observation window bounded even when no sample was received.
+        this._time = Math.max(this._time, timeOK);
         return this._samples;
     }
 }
