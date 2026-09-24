@@ -13,13 +13,42 @@
     "bugs": {
         "url": "https://github.com/CeeblueTV/web-utils/issues"
     },
+    "files": [
+        "dist"
+    ],
     "main": "dist/web-utils.js",
+    "module": "dist/web-utils.js",
     "types": "dist/web-utils.d.ts",
     "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/web-utils.d.ts",
+            "default": "./dist/web-utils.js"
+        },
+        "./ui": {
+            "types": "./dist/ui/web-utils-ui.d.ts",
+            "default": "./dist/ui/web-utils-ui.js"
+        },
+        "./ui/timeline": {
+            "types": "./dist/ui/timeline.d.ts",
+            "default": "./dist/ui/timeline.js"
+        },
+        "./ui/metrics": {
+            "types": "./dist/ui/metrics.d.ts",
+            "default": "./dist/ui/metrics.js"
+        },
+        "./package.json": "./package.json"
+    },
+    "sideEffects": [
+        "**/timeline.js",
+        "**/timeline.min.js",
+        "**/metrics.js",
+        "**/metrics.min.js"
+    ],
     "scripts": {
         "build": "rollup -c",
         "build:es5": "rollup -c --format umd",
-        "build:docs": "typedoc --tsconfig tsconfig.json index.ts",
+        "build:docs": "typedoc --tsconfig tsconfig.json index.ts src/ui/index.ts",
         "test": "vitest --run",
         "test:coverage": "vitest --run --coverage",
         "lint": "eslint . && prettier --check .",
@@ -62,6 +91,7 @@
         "eslint-plugin-headers": "~1.0.4",
         "is-ci": "~3.0.0",
         "jsdom": "^26.0.0",
+        "lightningcss": "^1.33.0",
         "lint-staged": "~15.5.2",
         "prettier": "3.2.4",
         "rollup": "~3.30.0",

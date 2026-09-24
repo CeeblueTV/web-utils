@@ -1,0 +1,33 @@
+/*
+ * Copyright 2024 Ceeblue B.V.
+ * This file is part of https://github.com/CeeblueTV/web-utils which is released under GNU Affero General Public License.
+ * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
+ */
+
+/*
+ * Self-hosted stylesheet for the UIMetrics widget — injected into its root (the document, or the
+ * shadow root when embedded as <cb-metrics>) at runtime. It consumes the --cb-* design tokens from
+ * :root, which cross the shadow boundary.
+ */
+.cb-stats-list {
+    background: transparent;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: block;
+    width: 100%;
+}
+
+/* UIMetrics injects <svg> rows directly as children — force them full-width. */
+.cb-stats-list > svg {
+    display: block;
+    width: 100%;
+    border-bottom: 1px solid var(--cb-border, rgba(103, 114, 148, 0.18));
+    font-family: var(--cb-f-mono, ui-monospace, monospace);
+    font-size: 12px;
+    fill: var(--cb-txt, #3d4459);
+}
+
+.cb-stats-list > svg:last-child {
+    border-bottom: none;
+}

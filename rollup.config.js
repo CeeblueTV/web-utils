@@ -13,9 +13,31 @@ import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import { dts } from 'rollup-plugin-dts';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
+import { transform as transformCss } from 'lightningcss';
 
-const input = 'index.ts';
-const output = 'dist/web-utils';
+// Import `.css` files as strings, so a component can self-host a co-located, editable stylesheet:
+// edited as real CSS, minified by lightningcss at build time (comments, incl. the license header, are
+// dropped) and injected at runtime.
+const cssString = () => ({
+    name: 'css-string',
+    transform(code, id) {
+        if (!id.endsWith('.css')) {
+            return null;
+        }
+        const { code: min } = transformCss({ filename: id, code: Buffer.from(code), minify: true });
+        return { code: `export default ${JSON.stringify(min.toString())};`, map: null };
+    }
+});
+
+// Public entry points, each emitted as a self-contained bundle in dist/:
+//  - index: pure logic (no DOM, no CSS) → `@ceeblue/web-utils`
+//  - ui/index: DOM/canvas components → `@ceeblue/web-utils/ui`
+const entries = [
+    { input: 'index.ts', out: 'dist/web-utils' },
+    { input: 'src/ui/index.ts', out: 'dist/ui/web-utils-ui' }, // distinct basename: safe if files get flattened
+    { input: 'src/ui/timeline.ts', out: 'dist/ui/timeline' }, // <cb-timeline> custom element (self-registers on import)
+    { input: 'src/ui/metrics.ts', out: 'dist/ui/metrics' } // <cb-metrics> custom element (self-registers on import)
+];
 
 export default args => {
     let target;
@@ -51,18 +73,20 @@ export default args => {
         throw new Error('Version is undefined or not a string.');
     }
 
-    return [
+    // Each entry yields three sequential builds: bundle → minify the bundle → type definitions.
+    return entries.flatMap(entry => [
         {
             // Transpile and bundle the code
-            input,
+            input: entry.input,
             output: {
                 name: process.env.npm_package_name,
                 format, // iife, es, cjs, umd, amd, system
                 compact: true,
                 sourcemap: true,
-                file: output + '.js'
+                file: entry.out + '.js'
             },
             plugins: [
+                cssString(),
                 replace({
                     __lib__version__: "'" + version + "'",
                     preventAssignment: true
@@ -74,23 +98,23 @@ export default args => {
         },
         {
             // Minify the bundled code
-            input: output + '.js',
+            input: entry.out + '.js',
             output: {
                 compact: true,
                 sourcemap: true,
-                file: output + '.min.js'
+                file: entry.out + '.min.js'
             },
             plugins: [terser()],
             context: 'window' // Useful for ES5 builds, ensures 'this' refers to 'window' in a browser context
         },
         {
             // Generate type definitions
-            input,
+            input: entry.input,
             output: {
                 compact: true,
-                file: output + '.d.ts'
+                file: entry.out + '.d.ts'
             },
             plugins: [dts()]
         }
-    ];
+    ]);
 };
