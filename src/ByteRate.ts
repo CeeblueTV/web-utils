@@ -32,10 +32,27 @@ export class ByteRate {
     }
 
     /**
+     * Whether the byte rate increased since the previous observation.
+     */
+    get increasing(): boolean {
+        this.measure();
+        return this._direction > 0;
+    }
+
+    /**
+     * Whether the byte rate decreased since the previous observation.
+     */
+    get decreasing(): boolean {
+        this.measure();
+        return this._direction < 0;
+    }
+
+    /**
      * Sets a new interval for computing the average byte rate
      */
     set interval(value: number) {
         this._interval = value;
+        this._rateTime = Number.NaN;
         this.updateSamples();
     }
 
@@ -44,6 +61,9 @@ export class ByteRate {
     private _time!: number; // beginning of the samples !
     private _samples!: Array<{ time: number; bytes: number; clip: boolean }>;
     private _clip!: boolean;
+    private _rate!: number;
+    private _rateTime!: number;
+    private _direction!: number;
 
     /**
      * Constructor initializes the ByteRate object with a specified interval (default: 1000ms).
@@ -67,10 +87,7 @@ export class ByteRate {
      * Computes the exact byte rate in bytes per second
      */
     exact(): number {
-        // compute rate/s
-        this.updateSamples();
-        const duration = Util.time() - this._time;
-        return duration ? (this._bytes / duration) * 1000 : 0;
+        return this.measure();
     }
 
     /**
@@ -89,6 +106,7 @@ export class ByteRate {
             lastSample.bytes += bytes;
         }
         this._bytes += bytes;
+        this._rateTime = Number.NaN;
         this.onBytes(bytes);
         return this;
     }
@@ -97,10 +115,14 @@ export class ByteRate {
      * Clears all recorded byte rate data.
      */
     clear(): ByteRate {
+        const now = Util.time();
         this._bytes = 0;
-        this._time = Util.time();
+        this._time = now;
         this._samples = [];
         this._clip = false;
+        this._rate = 0;
+        this._rateTime = now;
+        this._direction = 0;
         return this;
     }
 
@@ -128,7 +150,24 @@ export class ByteRate {
             lastSample.clip = true;
             this._clip = true;
         }
+        this._rateTime = Number.NaN;
         return this;
+    }
+
+    private measure(): number {
+        const now = Util.time();
+        if (now === this._rateTime) {
+            return this._rate;
+        }
+
+        this.updateSamples(now);
+        const duration = now - this._time;
+        const rate = duration ? (this._bytes / duration) * 1000 : 0;
+
+        this._direction = Math.sign(rate - this._rate);
+        this._rate = rate;
+        this._rateTime = now;
+        return rate;
     }
 
     private updateSamples(now = Util.time()) {
