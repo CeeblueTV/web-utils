@@ -26,3 +26,6 @@ coverage
 # Markdown
 *.md
 *.mdx
+
+# Styles (hand-authored, compact formatting preserved)
+styles

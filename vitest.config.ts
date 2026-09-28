@@ -5,7 +5,21 @@
  */
 import { defineConfig } from 'vitest/config';
 
+// Mirror the rollup build: import `.css` files as strings, so a component that self-hosts a co-located
+// stylesheet (e.g. UIMetrics) can be imported in tests.
+const cssString = () => ({
+    name: 'css-string',
+    enforce: 'pre',
+    transform(code: string, id: string) {
+        if (id.endsWith('.css')) {
+            return { code: `export default ${JSON.stringify(code)};`, map: null };
+        }
+        return null;
+    }
+});
+
 export default defineConfig({
+    plugins: [cssString()],
     test: {
         globals: true,
         environment: 'jsdom',

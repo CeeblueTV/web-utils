@@ -4,6 +4,12 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 
+// The widget's stylesheet lives in a co-located .css file, bundled to a string at build time.
+import styleCss from './UIMetrics.css';
+
+/** Shared constructable stylesheet — created once, adopted into each root the widget renders in. */
+let sheet: CSSStyleSheet | undefined;
+
 /**
  * An user-interface compoment to vizualize real-time metrics
  */
@@ -112,15 +118,23 @@ export class UIMetrics {
     private _stepSize: number;
     private _ranges: { [key: string]: { min: number; max: number } };
     private _mouseX?: number;
+    private _onMouseMove: (event: MouseEvent) => void;
+    private _onMouseLeave: () => void;
 
     constructor(ui: HTMLElement) {
         this._ui = ui;
-        ui.addEventListener('mousemove', (event: MouseEvent) => {
+        // Self-host the widget stylesheet in whatever root it lives in (document or a shadow root),
+        // so it needs no external CSS; only the --cb-* tokens are read from :root.
+        ui.classList.add('cb-stats-list');
+        this._injectStyles();
+        this._onMouseMove = (event: MouseEvent) => {
             this._mouseX = event.offsetX;
-        });
-        ui.addEventListener('mouseleave', (event: MouseEvent) => {
+        };
+        this._onMouseLeave = () => {
             this._mouseX = undefined;
-        });
+        };
+        ui.addEventListener('mousemove', this._onMouseMove);
+        ui.addEventListener('mouseleave', this._onMouseLeave);
         // default values in pixels
         this._lineHeight = 40;
         this._labelWidth = 170;
@@ -129,6 +143,40 @@ export class UIMetrics {
         this._legendFontSize = 13;
         this._stepSize = 10;
         this._ranges = {};
+    }
+
+    /**
+     * Detach the listeners added in the constructor. The self-hosted stylesheet is shared per root
+     * and left in place.
+     */
+    destroy() {
+        this._ui.removeEventListener('mousemove', this._onMouseMove);
+        this._ui.removeEventListener('mouseleave', this._onMouseLeave);
+    }
+
+    private _injectStyles() {
+        // The widget's root: the document, or its shadow root when embedded as <cb-metrics>.
+        const root = this._ui.getRootNode() as Document | ShadowRoot;
+        // Modern path: one shared constructable stylesheet, adopted once per root.
+        if (typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype) {
+            if (!sheet) {
+                sheet = new CSSStyleSheet();
+                sheet.replaceSync(styleCss);
+            }
+            const s = sheet;
+            if (root.adoptedStyleSheets.indexOf(s) === -1) {
+                root.adoptedStyleSheets = [...root.adoptedStyleSheets, s];
+            }
+            return;
+        }
+        // Fallback for environments without constructable stylesheets (old Safari, non-DOM test envs):
+        // a <style> element, injected once per root.
+        if (!root.querySelector('style[data-cb-uimetrics]')) {
+            const style = document.createElement('style');
+            style.setAttribute('data-cb-uimetrics', '');
+            style.textContent = styleCss;
+            (root instanceof Document ? root.head : root).appendChild(style);
+        }
     }
 
     /**
@@ -284,5 +332,50 @@ export class UIMetrics {
             value +
             '</text>';
         return circle;
+    }
+}
+
+/**
+ * `<cb-metrics>` — a Web Component wrapping {@link UIMetrics} in its own shadow root, so a page can
+ * embed it with a single tag and no build step. Register it with {@link defineMetrics} (or import the
+ * `@ceeblue/web-utils/ui/metrics` entry, which registers it for you). The widget self-hosts its
+ * stylesheet into the shadow root and themes from the `--cb-*` tokens on `:root`.
+ */
+export class CbMetricsElement extends HTMLElement {
+    private _metrics?: UIMetrics;
+
+    connectedCallback() {
+        if (this._metrics) {
+            return;
+        }
+        const shadow = this.attachShadow({ mode: 'open' });
+        const style = document.createElement('style');
+        style.textContent = ':host{display:block;width:100%}';
+        const list = document.createElement('div');
+        shadow.append(style, list);
+        // UIMetrics tags `list` and injects its own stylesheet into this shadow root.
+        this._metrics = new UIMetrics(list);
+    }
+
+    disconnectedCallback() {
+        this._metrics?.destroy();
+        this._metrics = undefined;
+    }
+
+    /** Render a metrics snapshot: one history array per metric name. */
+    display(stats: Map<string, Array<string | number>>) {
+        this._metrics?.display(stats);
+    }
+
+    /** The underlying widget for advanced use. */
+    get metrics(): UIMetrics | undefined {
+        return this._metrics;
+    }
+}
+
+/** Register the `<cb-metrics>` custom element (idempotent). */
+export function defineMetrics() {
+    if (!customElements.get('cb-metrics')) {
+        customElements.define('cb-metrics', CbMetricsElement);
     }
 }
