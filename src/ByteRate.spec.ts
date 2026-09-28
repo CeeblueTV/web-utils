@@ -33,6 +33,20 @@ describe('ByteRate', () => {
             expect(rate.interval).toBe(2000);
             expect(rate.value()).toBe(0);
         });
+
+        it('should invalidate the cached rate when changing the interval', () => {
+            const rate = new ByteRate(1000);
+            rate.addBytes(500);
+            currentTime += 750;
+            rate.addBytes(500);
+            currentTime += 250;
+            expect(rate.value()).toBe(1000);
+
+            rate.interval = 500;
+
+            expect(rate.interval).toBe(500);
+            expect(rate.value()).toBe(333);
+        });
     });
 
     describe('basic operations', () => {
@@ -90,6 +104,67 @@ describe('ByteRate', () => {
             };
             rate.addBytes(1000);
             expect(callbackBytes).toBe(1000);
+        });
+    });
+
+    describe('trend', () => {
+        it('should report an increasing byte rate', () => {
+            const rate = new ByteRate(1000);
+            rate.addBytes(500);
+            currentTime += 500;
+
+            expect(rate.increasing).toBe(true);
+            expect(rate.decreasing).toBe(false);
+        });
+
+        it('should report a decreasing byte rate', () => {
+            const rate = new ByteRate(1000);
+            rate.addBytes(1000);
+            currentTime += 500;
+            rate.value();
+            currentTime += 1000;
+
+            expect(rate.increasing).toBe(false);
+            expect(rate.decreasing).toBe(true);
+        });
+
+        it('should report no direction when the byte rate is stable', () => {
+            const rate = new ByteRate(1000);
+            rate.addBytes(500);
+            currentTime += 500;
+            rate.value();
+            rate.addBytes(500);
+            currentTime += 500;
+
+            expect(rate.increasing).toBe(false);
+            expect(rate.decreasing).toBe(false);
+        });
+
+        it('should update the direction when bytes are added at the last measurement time', () => {
+            const rate = new ByteRate(1000);
+            rate.addBytes(500);
+            currentTime += 500;
+            rate.value();
+            rate.addBytes(500);
+            currentTime += 500;
+            rate.value();
+            expect(rate.increasing).toBe(false);
+
+            rate.addBytes(500);
+
+            expect(rate.increasing).toBe(true);
+            expect(rate.decreasing).toBe(false);
+        });
+
+        it('should reset the direction when cleared', () => {
+            const rate = new ByteRate(1000);
+            rate.addBytes(500);
+            currentTime += 500;
+            expect(rate.increasing).toBe(true);
+
+            rate.clear();
+            expect(rate.increasing).toBe(false);
+            expect(rate.decreasing).toBe(false);
         });
     });
 
