@@ -4,8 +4,31 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 
+// Caps the precision of raw floats pushed unformatted, like 0.30000000000000004
+const MAX_DECIMALS = 3;
+
 /**
- * An user-interface compoment to vizualize real-time metrics
+ * Count of decimals written in a sample, '0.37%' → 2, '850kbps' → 0
+ * @param value sample as pushed by the caller
+ * @returns decimal count, capped to MAX_DECIMALS
+ */
+function decimalsOf(value: string | number): number {
+    const decimals = /^\s*[-+]?\d*\.(\d+)/.exec(value.toString());
+    return decimals ? Math.min(decimals[1].length, MAX_DECIMALS) : 0;
+}
+
+/**
+ * Format a number with a fixed precision, dropping trailing zeros
+ * @param value number to format
+ * @param decimals maximum count of decimals
+ * @returns formatted value
+ */
+function formatNumber(value: number, decimals: number): string {
+    return Number(value.toFixed(decimals)).toString();
+}
+
+/**
+ * An user-interface component to vizualize real-time metrics
  */
 export class UIMetrics {
     /**
@@ -178,13 +201,15 @@ export class UIMetrics {
                 this._lineHeight +
                 'px" xmlns="http://www.w3.org/2000/svg">';
             this._html += '<text x="' + this._textMargin + '" y="' + textY + '">' + key + '</text>';
+            // A string sample is displayed as formatted by the caller, a raw number gets capped
+            const last = values[values.length - 1];
             this._html +=
                 '<text x="' +
                 titleWidth +
                 '" y="' +
                 textY +
                 '" text-anchor="end">' +
-                values[values.length - 1].toString() +
+                (typeof last === 'number' ? formatNumber(last, decimalsOf(last)) : last) +
                 '</text>';
 
             this._html += '<path fill="none" d="M' + this._labelWidth + ' ' + graphMiddle;
@@ -195,7 +220,10 @@ export class UIMetrics {
 
             let min = Number.POSITIVE_INFINITY;
             let max = Number.NEGATIVE_INFINITY;
+            // Legends keep the precision of the samples
+            let decimals = 0;
             for (let i = 0; i < values.length; ++i) {
+                decimals = Math.max(decimals, decimalsOf(values[i]));
                 const value = parseFloat(values[i].toString());
                 if (value < min) {
                     min = value;
@@ -222,28 +250,29 @@ export class UIMetrics {
                 const y = graphMiddle + (delta ? Math.round((0.5 - (value - range.min) / delta) * graphHeight) : 0);
                 this._html += x + ' ' + y + ' ';
                 if (value === min) {
-                    maxCircle = maxCircle || this._drawCircle(x, y, value);
+                    maxCircle = maxCircle || this._drawCircle(x, y, formatNumber(value, decimals));
                 } else if (value === max) {
-                    minCircle = minCircle || this._drawCircle(x, y, value);
+                    minCircle = minCircle || this._drawCircle(x, y, formatNumber(value, decimals));
                 }
                 if (mouseCircle === '' && x <= (this._mouseX || 0)) {
-                    mouseCircle = this._drawCircle(x, y, value, 'blue', '');
+                    mouseCircle = this._drawCircle(x, y, formatNumber(value, decimals), 'blue', '');
                 }
             }
 
             this._html += '" />'; // end path
 
-            // Average
-            const average = Math.round((max - min) / 2);
+            // Center and half-spread of the range
+            const average = (max - min) / 2;
             this._html += '<text text-anchor="middle" font-size="' + this._legendFontSize + '" y="' + textY + '">';
             this._html +=
                 '<tspan x="' +
                 (width + averageCenter) +
                 '" dy="-0.5em">' +
                 (min !== max ? '≈' : '=') +
-                (min + average) +
+                formatNumber(min + average, decimals) +
                 '</tspan>';
-            this._html += '<tspan x="' + (width + averageCenter) + '" dy="1em">±' + average + '</tspan>';
+            this._html +=
+                '<tspan x="' + (width + averageCenter) + '" dy="1em">±' + formatNumber(average, decimals) + '</tspan>';
             this._html += '</text>';
 
             this._html += minCircle + maxCircle + (mouseCircle ?? '');
@@ -260,7 +289,7 @@ export class UIMetrics {
         });
     }
 
-    private _drawCircle(x: number, y: number, value: number, color = 'green', fontStyle = 'italic') {
+    private _drawCircle(x: number, y: number, value: string, color = 'green', fontStyle = 'italic') {
         let circle = '<circle cx="' + x + '" cy="' + y + '" r="2" fill="' + color + '" />';
         const legendFontHeight = 0.7 * this._legendFontSize;
         const graphMiddle = Math.round(this._lineHeight / 2);
