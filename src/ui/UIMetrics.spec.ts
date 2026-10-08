@@ -54,7 +54,10 @@ describe('UIMetrics', () => {
 
     it('renders an <svg> row per metric on display()', () => {
         const { ui, m } = make();
-        ui.dispatchEvent(new MouseEvent('mousemove')); // exercise the hover branch
+        // jsdom leaves offsetX undefined, set it to hover the graph
+        const move = new MouseEvent('mousemove');
+        Object.defineProperty(move, 'offsetX', { value: 200 });
+        ui.dispatchEvent(move);
         const stats = new Map<string, Array<string | number>>([
             ['Bitrate', [1000, 1100, 900, 1200, 1050]],
             ['FPS', [30, 30, 30, 30, 30]]
@@ -62,6 +65,7 @@ describe('UIMetrics', () => {
         m.display(stats);
         flushRaf();
         expect((ui.innerHTML.match(/<svg/g) || []).length).toBe(2);
+        expect(ui.innerHTML).toContain('fill="blue"');
         ui.dispatchEvent(new MouseEvent('mouseleave'));
     });
 
