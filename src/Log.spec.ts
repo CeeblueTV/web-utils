@@ -72,4 +72,44 @@ describe('Log.observe', () => {
         expect(on).toHaveBeenCalledWith(LogLevel.WARN, ['careful']);
         expect(console.info).not.toHaveBeenCalled();
     });
+
+    it('keeps its args intact when an on handler intercepts the log', () => {
+        const component = new Component();
+        component.log.observe = (level, args) => seen.push([level, args]);
+        component.log.on = (level, args) => {
+            args.length = 0; // final interception
+        };
+        component.log('captured').error();
+        expect(seen).toEqual([[LogLevel.ERROR, ['captured']]]);
+        expect(console.error).not.toHaveBeenCalled();
+    });
+
+    it('cannot change the args seen by the on handlers or printed', () => {
+        const component = new Component();
+        const on = vi.fn();
+        component.log.on = on;
+        component.log.observe = (level, args) => seen.push([level, args]);
+        component.log('original').error();
+        expect(Object.isFrozen(seen[0][1])).toBe(true);
+        expect(() => (seen[0][1] as unknown[]).push('injected')).toThrow(TypeError);
+        expect(on).toHaveBeenCalledWith(LogLevel.ERROR, ['original']);
+        expect(console.error).toHaveBeenCalledTimes(1);
+        expect(console.error).toHaveBeenCalledWith('original');
+    });
+
+    it('still prints and reaches the on handlers when an observer throws', () => {
+        const component = new Component();
+        const on = vi.fn();
+        component.log.on = on;
+        const failure = new Error('telemetry full');
+        log.observe = () => {
+            throw failure;
+        };
+        component.log.observe = (level, args) => seen.push([level, args]);
+        expect(() => component.log('failed').error()).not.toThrow();
+        expect(seen).toEqual([[LogLevel.ERROR, ['failed']]]); // the component observer still runs
+        expect(on).toHaveBeenCalledWith(LogLevel.ERROR, ['failed']);
+        expect(console.error).toHaveBeenCalledWith('Log observer failed:', failure);
+        expect(console.error).toHaveBeenCalledWith('failed');
+    });
 });

@@ -82,11 +82,11 @@ export interface ILog {
      */
     on: (level: LogLevel, args: unknown[]) => void;
     /**
-     * Observe every log before any level filter, without changing it: the args must not be modified,
-     * and the console and {@link ILog.on} behave as without observer. On the global {@link log} it
-     * observes the logs of every component.
+     * Observe every log before any level filter, without changing it: the console and {@link ILog.on}
+     * behave as without observer, even if it throws. On the global {@link log} it observes the logs
+     * of every component.
      * @param level log level
-     * @param args args
+     * @param args frozen copy of the args, safe to keep
      */
     observe?: (level: LogLevel, args: readonly unknown[]) => void;
     /**
@@ -112,6 +112,15 @@ _charLevels[101] = _charLevels[69] = 1; // error
 _charLevels[119] = _charLevels[87] = 2; // warn
 _charLevels[105] = _charLevels[73] = 3; // info
 _charLevels[100] = _charLevels[68] = 4; // debug
+
+// a failing observer must break neither the log nor its caller
+function observe(localLog: ILog, level: LogLevel, args: readonly unknown[]) {
+    try {
+        localLog.observe?.(level, args);
+    } catch (e) {
+        console.error('Log observer failed:', e);
+    }
+}
 
 /**
  * Log instance
@@ -170,9 +179,13 @@ export class Log {
             --_logging;
         }
         // observers see every log, before any filter or interception
-        log.observe?.(level, this._args);
-        if (this._log !== log) {
-            this._log.observe?.(level, this._args);
+        if (log.observe || this._log.observe) {
+            // frozen copy: an observer can neither change the log nor see its args emptied by an interception
+            const args = Object.freeze(this._args.slice());
+            observe(log, level, args);
+            if (this._log !== log) {
+                observe(this._log, level, args);
+            }
         }
         // call the global onLog in first (global filter)
         if (!this._onLog(log, level)) {
