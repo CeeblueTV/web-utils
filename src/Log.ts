@@ -54,6 +54,11 @@ export enum LogLevel {
  *    fileLogger[level](...args); // args stays unchanged to let's continue the default behavior
  * }
  *
+ * // Observe every log of the Player component, whatever the log levels, without changing them
+ * player.log.observe = (level:LogLevel,args:readonly unknown[]) => {
+ *    telemetry.push(level, args); // read-only: the console and the log.on handlers are unaffected
+ * }
+ *
  * // Redefine the log to add some prefix indication
  * class Player {
  *    connector = new Connector();
@@ -76,6 +81,14 @@ export interface ILog {
      * @returns
      */
     on: (level: LogLevel, args: unknown[]) => void;
+    /**
+     * Observe every log before any level filter, without changing it: the args must not be modified,
+     * and the console and {@link ILog.on} behave as without observer. On the global {@link log} it
+     * observes the logs of every component.
+     * @param level log level
+     * @param args args
+     */
+    observe?: (level: LogLevel, args: readonly unknown[]) => void;
     /**
      * Change log level, default log level is {@link LogLevel.INFO},
      * Boolean can be user to lets pass all the logs with `true` or disables all the logs with `false`.
@@ -155,6 +168,11 @@ export class Log {
         if (!this._done) {
             this._done = true;
             --_logging;
+        }
+        // observers see every log, before any filter or interception
+        log.observe?.(level, this._args);
+        if (this._log !== log) {
+            this._log.observe?.(level, this._args);
         }
         // call the global onLog in first (global filter)
         if (!this._onLog(log, level)) {
