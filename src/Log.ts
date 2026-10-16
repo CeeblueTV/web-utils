@@ -78,6 +78,8 @@ export interface ILog {
     /**
      * Intercept,redefine or redirect any log
      * If you clear args you intercept the log and nothing happen more after this call.
+     * An exception thrown by the handler does not reach the caller: it is rethrown in a microtask,
+     * where it is reported as an uncaught error. Only the first failure of a handler is reported.
      * @param level log level
      * @param args args
      * @returns
@@ -85,9 +87,10 @@ export interface ILog {
     on: (level: LogLevel, args: unknown[]) => void;
     /**
      * Observe every log before any level filter, without changing it: the console and {@link ILog.on}
-     * behave as without observer, even if it throws (only its first failure is reported). On the
-     * global {@link log} it observes the logs of every component. The logs emitted while an observer
-     * runs are not observed, to prevent recursion.
+     * behave as without observer, even if it throws. On the global {@link log} it observes the logs
+     * of every component. The logs emitted while an observer runs are not observed, to prevent recursion.
+     * An exception thrown by an observer does not reach the caller: it is rethrown in a microtask,
+     * where it is reported as an uncaught error. Only the first failure of an observer is reported.
      * @param level log level
      * @param args frozen shallow copy of the args: the objects inside are the caller's live objects,
      * format them rather than keep them if they may hold large data (buffers, samples)
@@ -119,21 +122,31 @@ _charLevels[100] = _charLevels[68] = 4; // debug
 
 // true while an observer runs: the logs it emits are not observed, otherwise it would recurse
 let _observing = false;
-// observers already reported as failing, to not flood the console with one error per log
-const _failedObservers = new WeakSet<NonNullable<ILog['observe']>>();
+// methods already reported as failing: reporting every failure would flood the uncaught error handlers,
+// and loop forever if one of them logs the error through a failing method
+const _failedMethods = new WeakSet<Function>();
 
-// a failing observer must break neither the log nor its caller
-function observe(localLog: ILog, level: LogLevel, args: readonly unknown[]) {
-    const observer = localLog.observe;
-    if (!observer) {
+/**
+ * Call an optional log handler.
+ * Prevent the caller from catching and misattributing logging errors.
+ * Report them asynchronously as uncaught errors instead.
+ */
+function safeCall<This, Args extends unknown[]>(
+    receiver: This,
+    method: ((this: This, ...args: Args) => void) | undefined,
+    ...args: Args
+) {
+    if (!method) {
         return;
     }
     try {
-        observer(level, args);
+        method.apply(receiver, args);
     } catch (e) {
-        if (!_failedObservers.has(observer)) {
-            _failedObservers.add(observer);
-            console.error('Log observer failed, next failures will be silent:', e);
+        if (!_failedMethods.has(method)) {
+            _failedMethods.add(method);
+            queueMicrotask(() => {
+                throw e;
+            });
         }
     }
 }
@@ -183,9 +196,7 @@ export class Log {
         if (logLevel !== true && _charLevels[level.charCodeAt(0)] > _charLevels[logLevel.charCodeAt(0)]) {
             return false;
         }
-        if (localLog.on) {
-            localLog.on(level, this._args);
-        }
+        safeCall(localLog, localLog.on, level, this._args);
         return this._args.length ? true : false;
     }
 
@@ -196,13 +207,13 @@ export class Log {
         }
         // observers see every log, before any filter or interception
         if (!_observing && (log.observe || this._log.observe)) {
-            // frozen copy: an observer can neither change the log nor see its args emptied by an interception
-            const args = Object.freeze(this._args.slice());
-            _observing = true;
             try {
-                observe(log, level, args);
+                _observing = true;
+                // frozen copy: an observer cannot change the argument list or see it emptied by an interception
+                const args = Object.freeze(this._args.slice());
+                safeCall(log, log.observe, level, args);
                 if (this._log !== log) {
-                    observe(this._log, level, args);
+                    safeCall(this._log, this._log.observe, level, args);
                 }
             } finally {
                 _observing = false;

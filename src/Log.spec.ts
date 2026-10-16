@@ -97,7 +97,8 @@ describe('Log.observe', () => {
         expect(console.error).toHaveBeenCalledWith('original');
     });
 
-    it('still prints and reaches the on handlers when an observer throws', () => {
+    it('rethrows an observer error in a microtask, without breaking the log or the other observer', () => {
+        const report = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(() => {});
         const component = new Component();
         const on = vi.fn();
         component.log.on = on;
@@ -107,26 +108,30 @@ describe('Log.observe', () => {
         };
         component.log.observe = (level, args) => seen.push([level, args]);
         expect(() => component.log('failed').error()).not.toThrow();
-        expect(seen).toEqual([[LogLevel.ERROR, ['failed']]]); // the component observer still runs
+        expect(seen).toEqual([[LogLevel.ERROR, ['failed']]]); // the local observer still runs
         expect(on).toHaveBeenCalledWith(LogLevel.ERROR, ['failed']);
-        expect(console.error).toHaveBeenCalledWith('Log observer failed, next failures will be silent:', failure);
         expect(console.error).toHaveBeenCalledWith('failed');
+        expect(report).toHaveBeenCalledTimes(1);
+        expect(report.mock.calls[0][0]).toThrow(failure); // reported as uncaught, out of the caller
+
+        component.log('next').error(); // the recursion guard is released after a failure
+        expect(seen).toHaveLength(2);
     });
 
-    it('reports only the first failure of an observer', () => {
+    it('reports only the first failure of each observer', () => {
+        const report = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(() => {});
         const component = new Component();
         component.log.observe = () => {
             throw new Error('telemetry full');
         };
         component.log('a').debug();
         component.log('b').debug();
-        component.log('c').debug();
-        expect(console.error).toHaveBeenCalledTimes(1);
+        expect(report).toHaveBeenCalledTimes(1);
         component.log.observe = () => {
             throw new Error('another observer');
         };
-        component.log('d').debug();
-        expect(console.error).toHaveBeenCalledTimes(2); // a new observer is reported again
+        component.log('c').debug();
+        expect(report).toHaveBeenCalledTimes(2); // a new observer is reported again
     });
 
     it('does not observe the logs emitted by an observer, which would recurse', () => {
@@ -144,5 +149,56 @@ describe('Log.observe', () => {
         expect(console.error).toHaveBeenCalledWith('line');
         component.log('next').error(); // the guard is released after the observer
         expect(seen).toHaveLength(2);
+    });
+});
+
+describe('Log.on', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('rethrows a handler error in a microtask, without breaking the log', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const report = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(() => {});
+        const component = new Component();
+        const failure = new Error('file logger closed');
+        component.log.on = () => {
+            throw failure;
+        };
+        expect(() => component.log('failed').error()).not.toThrow();
+        expect(console.error).toHaveBeenCalledWith('failed');
+        expect(report).toHaveBeenCalledTimes(1);
+        expect(report.mock.calls[0][0]).toThrow(failure); // reported as uncaught, out of the caller
+    });
+
+    it('does not loop when an uncaught error handler logs the reported failure', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const reports: Array<() => void> = [];
+        vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(task => reports.push(task));
+        const component = new Component();
+        component.log.on = () => {
+            throw new Error('file logger closed');
+        };
+        component.log('failed').error();
+        // run the reports as the event loop would, with an uncaught error handler that logs them
+        for (let i = 0; i < reports.length && i < 10; ++i) {
+            try {
+                reports[i]();
+            } catch (e) {
+                component.log('uncaught', e).error();
+            }
+        }
+        expect(reports).toHaveLength(1);
+    });
+
+    it('calls a handler with its logger as receiver', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const component = new Component();
+        const on = vi.fn(function (this: unknown) {
+            expect(this).toBe(component.log);
+        });
+        component.log.on = on;
+        component.log('received').error();
+        expect(on).toHaveBeenCalledOnce();
     });
 });
