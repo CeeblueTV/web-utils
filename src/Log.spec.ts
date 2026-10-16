@@ -109,7 +109,40 @@ describe('Log.observe', () => {
         expect(() => component.log('failed').error()).not.toThrow();
         expect(seen).toEqual([[LogLevel.ERROR, ['failed']]]); // the component observer still runs
         expect(on).toHaveBeenCalledWith(LogLevel.ERROR, ['failed']);
-        expect(console.error).toHaveBeenCalledWith('Log observer failed:', failure);
+        expect(console.error).toHaveBeenCalledWith('Log observer failed, next failures will be silent:', failure);
         expect(console.error).toHaveBeenCalledWith('failed');
+    });
+
+    it('reports only the first failure of an observer', () => {
+        const component = new Component();
+        component.log.observe = () => {
+            throw new Error('telemetry full');
+        };
+        component.log('a').debug();
+        component.log('b').debug();
+        component.log('c').debug();
+        expect(console.error).toHaveBeenCalledTimes(1);
+        component.log.observe = () => {
+            throw new Error('another observer');
+        };
+        component.log('d').debug();
+        expect(console.error).toHaveBeenCalledTimes(2); // a new observer is reported again
+    });
+
+    it('does not observe the logs emitted by an observer, which would recurse', () => {
+        const component = new Component();
+        const on = vi.fn();
+        component.log.on = on;
+        component.log.observe = (level, args) => {
+            seen.push([level, args]);
+            component.log('observed', args[0]).error();
+        };
+        component.log('line').error();
+        expect(seen).toEqual([[LogLevel.ERROR, ['line']]]);
+        expect(on).toHaveBeenCalledWith(LogLevel.ERROR, ['observed', 'line']); // still logged, just not observed
+        expect(console.error).toHaveBeenCalledWith('observed', 'line');
+        expect(console.error).toHaveBeenCalledWith('line');
+        component.log('next').error(); // the guard is released after the observer
+        expect(seen).toHaveLength(2);
     });
 });

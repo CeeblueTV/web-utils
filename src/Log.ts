@@ -56,7 +56,7 @@ export enum LogLevel {
  *
  * // Observe every log of the Player component, whatever the log levels, without changing them
  * player.log.observe = (level:LogLevel,args:readonly unknown[]) => {
- *    telemetry.push(level, args); // read-only: the console and the log.on handlers are unaffected
+ *    telemetry.push(level, args.join(' ')); // read-only: the console and the log.on handlers are unaffected
  * }
  *
  * // Redefine the log to add some prefix indication
@@ -83,10 +83,12 @@ export interface ILog {
     on: (level: LogLevel, args: unknown[]) => void;
     /**
      * Observe every log before any level filter, without changing it: the console and {@link ILog.on}
-     * behave as without observer, even if it throws. On the global {@link log} it observes the logs
-     * of every component.
+     * behave as without observer, even if it throws (only its first failure is reported). On the
+     * global {@link log} it observes the logs of every component. The logs emitted while an observer
+     * runs are not observed, to prevent recursion.
      * @param level log level
-     * @param args frozen copy of the args, safe to keep
+     * @param args frozen shallow copy of the args: the objects inside are the caller's live objects,
+     * format them rather than keep them if they may hold large data (buffers, samples)
      */
     observe?: (level: LogLevel, args: readonly unknown[]) => void;
     /**
@@ -113,12 +115,24 @@ _charLevels[119] = _charLevels[87] = 2; // warn
 _charLevels[105] = _charLevels[73] = 3; // info
 _charLevels[100] = _charLevels[68] = 4; // debug
 
+// true while an observer runs: the logs it emits are not observed, otherwise it would recurse
+let _observing = false;
+// observers already reported as failing, to not flood the console with one error per log
+const _failedObservers = new WeakSet<NonNullable<ILog['observe']>>();
+
 // a failing observer must break neither the log nor its caller
 function observe(localLog: ILog, level: LogLevel, args: readonly unknown[]) {
+    const observer = localLog.observe;
+    if (!observer) {
+        return;
+    }
     try {
-        localLog.observe?.(level, args);
+        observer(level, args);
     } catch (e) {
-        console.error('Log observer failed:', e);
+        if (!_failedObservers.has(observer)) {
+            _failedObservers.add(observer);
+            console.error('Log observer failed, next failures will be silent:', e);
+        }
     }
 }
 
@@ -179,12 +193,17 @@ export class Log {
             --_logging;
         }
         // observers see every log, before any filter or interception
-        if (log.observe || this._log.observe) {
+        if (!_observing && (log.observe || this._log.observe)) {
             // frozen copy: an observer can neither change the log nor see its args emptied by an interception
             const args = Object.freeze(this._args.slice());
-            observe(log, level, args);
-            if (this._log !== log) {
-                observe(this._log, level, args);
+            _observing = true;
+            try {
+                observe(log, level, args);
+                if (this._log !== log) {
+                    observe(this._log, level, args);
+                }
+            } finally {
+                _observing = false;
             }
         }
         // call the global onLog in first (global filter)
