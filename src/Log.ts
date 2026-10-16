@@ -56,7 +56,9 @@ export enum LogLevel {
  *
  * // Observe every log of the Player component, whatever the log levels, without changing them
  * player.log.observe = (level:LogLevel,args:readonly unknown[]) => {
- *    telemetry.push(level, args.join(' ')); // read-only: the console and the log.on handlers are unaffected
+ *    // read-only: the console and the log.on handlers are unaffected
+ *    // format the args rather than keep them, noBin to not encode the binary data (media samples)
+ *    telemetry.push(level, Util.stringify(args, { noBin: true }));
  * }
  *
  * // Redefine the log to add some prefix indication
