@@ -99,6 +99,22 @@ describe('PlayerStats', () => {
             expect(cmcd.br).toBe(96 + 1800);
         });
 
+        it('should set br to 0 when the selected track has no bandwidth', () => {
+            const stats = new PlayerStats();
+            stats.audioTrackId = 2;
+            stats.videoTrackId = 1;
+
+            const url = new URL('https://example.com/live/chunk.ts');
+
+            const audio = stats.toCmcd(url, [2]);
+            expect(audio.ot).toBe(CML.CmcdObjectType.AUDIO);
+            expect(audio.br).toBe(0);
+
+            const video = stats.toCmcd(url, [1]);
+            expect(video.ot).toBe(CML.CmcdObjectType.VIDEO);
+            expect(video.br).toBe(0);
+        });
+
         it('should prefer playbackRate over playbackSpeed and round pr to 2 decimals', () => {
             const stats = new PlayerStats();
             stats.playbackSpeed = 1.0;
