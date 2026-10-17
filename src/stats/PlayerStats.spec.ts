@@ -16,26 +16,25 @@ describe('PlayerStats', () => {
             stats.protocol = 'HLS';
             stats.bufferAmount = 1000;
             stats.playbackRate = 1.5;
-            stats.audioByteRate = 60;
-            stats.videoByteRate = 1500;
+            stats.audioByteRate = 7500; // 60 kbps
+            stats.videoByteRate = 187500; // 1500 kbps
             stats.buffering = true;
             stats.stallCount = 3;
             stats.videoTrackId = 1;
-            stats.videoTrackBandwidth = 1500;
+            stats.videoTrackBandwidth = 187500; // 1500 kbps
             stats.audioTrackId = 2;
-            stats.audioTrackBandwidth = 64;
+            stats.audioTrackBandwidth = 8000; // 64 kbps
 
             const prev = new PlayerStats();
             prev.stallCount = 2;
 
-            const url = new URL('https://example.com/live/manifest.m3u8?token=abc');
+            const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [1], prev);
 
             expect(cmcd).toMatchObject({
                 ot: CML.CmcdObjectType.VIDEO,
                 st: CML.CmcdStreamType.LIVE,
                 cid: Util.hash(url.pathname),
-                dl: 1500,
                 br: 1500,
                 bs: true,
                 bl: 1000,
@@ -44,11 +43,13 @@ describe('PlayerStats', () => {
                 sf: 'h',
                 su: true
             });
+            // 1000 ms of buffer drains in 666.67 ms at 1.5x
+            expect(cmcd.dl).toBeCloseTo(1000 / 1.5);
         });
 
         it('should set mtp from dataByteRate when audio and video byte rates are missing', () => {
             const stats = new PlayerStats();
-            stats.dataByteRate = 512;
+            stats.dataByteRate = 64000; // 512 kbps
 
             const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [99]);
@@ -59,9 +60,9 @@ describe('PlayerStats', () => {
         it('should select the correct object type and bitrate for audio track', () => {
             const stats = new PlayerStats();
             stats.audioTrackId = 2;
-            stats.audioTrackBandwidth = 96;
+            stats.audioTrackBandwidth = 12000; // 96 kbps
             stats.videoTrackId = 1;
-            stats.videoTrackBandwidth = 1800;
+            stats.videoTrackBandwidth = 225000; // 1800 kbps
 
             const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [2]);
@@ -73,9 +74,9 @@ describe('PlayerStats', () => {
         it('should use MUXED object type and combined bitrate when audio and video tracks are both selected', () => {
             const stats = new PlayerStats();
             stats.audioTrackId = 2;
-            stats.audioTrackBandwidth = 96;
+            stats.audioTrackBandwidth = 12000; // 96 kbps
             stats.videoTrackId = 1;
-            stats.videoTrackBandwidth = 1800;
+            stats.videoTrackBandwidth = 225000; // 1800 kbps
 
             const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [1, 2]);
@@ -87,9 +88,9 @@ describe('PlayerStats', () => {
         it('should sum bitrates and use OTHER object type when trackId does not match', () => {
             const stats = new PlayerStats();
             stats.audioTrackId = 2;
-            stats.audioTrackBandwidth = 96;
+            stats.audioTrackBandwidth = 12000; // 96 kbps
             stats.videoTrackId = 1;
-            stats.videoTrackBandwidth = 1800;
+            stats.videoTrackBandwidth = 225000; // 1800 kbps
 
             const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [99]);
@@ -104,11 +105,11 @@ describe('PlayerStats', () => {
             stats.playbackRate = 1.234;
             stats.bufferAmount = 1000;
 
-            const url = new URL('https://example.com/v/seg.ts');
+            const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [1]);
 
             expect(cmcd.pr).toBe(1.23);
-            expect(cmcd.dl).toBe(1234);
+            expect(cmcd.dl).toBeCloseTo(1000 / 1.234);
         });
 
         it('should fall back to playbackSpeed when playbackRate is missing', () => {
@@ -116,15 +117,26 @@ describe('PlayerStats', () => {
             stats.playbackSpeed = 2;
             stats.bufferAmount = 500;
 
-            const url = new URL('https://example.com/v/seg.ts');
+            const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [1]);
 
             expect(cmcd.pr).toBe(2);
-            expect(cmcd.dl).toBe(1000);
+            expect(cmcd.dl).toBe(250);
+        });
+
+        it('should not set dl when playback is stopped', () => {
+            const stats = new PlayerStats();
+            stats.playbackSpeed = 0;
+            stats.bufferAmount = 500;
+
+            const url = new URL('https://example.com/live/chunk.ts');
+            const cmcd = stats.toCmcd(url, [1]);
+
+            expect(cmcd).not.toHaveProperty('dl');
         });
 
         it('should map streaming format by protocol and default to "o" for unknown protocol', () => {
-            const url = new URL('https://example.com/live/manifest.mpd');
+            const url = new URL('https://example.com/live/chunk.ts');
 
             const dash = new PlayerStats();
             dash.protocol = 'DASH';
@@ -141,7 +153,7 @@ describe('PlayerStats', () => {
 
         it('should not set optional fields when their source values are undefined', () => {
             const stats = new PlayerStats();
-            const url = new URL('https://example.com/live/seg.ts');
+            const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [1]);
 
             expect(cmcd).toMatchObject({
@@ -163,7 +175,7 @@ describe('PlayerStats', () => {
             const prev = new PlayerStats();
             prev.stallCount = 5;
 
-            const url = new URL('https://example.com/live/seg.ts');
+            const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [1], prev);
 
             expect(cmcd.bs).toBe(false);
