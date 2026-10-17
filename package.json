@@ -19,7 +19,7 @@
     "scripts": {
         "build": "rollup -c",
         "build:es5": "rollup -c --format umd",
-        "build:docs": "typedoc --tsconfig tsconfig.json index.ts",
+        "build:docs": "typedoc --options typedoc.json --tsconfig tsconfig.json index.ts",
         "test": "vitest --run",
         "test:coverage": "vitest --run --coverage",
         "lint": "eslint . && prettier --check .",
