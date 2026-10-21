@@ -87,6 +87,10 @@ export class BinaryReader {
     readDouble(): number {
         return this.next(8) === 8 ? this._view.getFloat64(this._position - 8) : 0;
     }
+    /**
+     * Read a 7-bit variable-length unsigned integer
+     * @returns the value, or 0 if the data ends inside it, in which case the remaining bytes are consumed
+     */
     read7Bit(): number {
         let result: number = 0;
         let factor: number = 1;
@@ -94,11 +98,11 @@ export class BinaryReader {
             const byte = this.read8();
             result += (byte & 0x7f) * factor;
             if (!(byte & 0x80)) {
-                break;
+                return result;
             }
             factor *= 128;
         }
-        return result;
+        return 0; // value cut by the end of data, like the other readers
     }
     readString(): string {
         let i = this._position;
