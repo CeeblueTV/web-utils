@@ -171,6 +171,35 @@ describe('Connect', () => {
             expect(url.pathname).toBe('/custom/path');
         });
 
+        it('should decode the stream name derived from the URL path', () => {
+            for (const endPoint of ['https://h/wrts/out%2Bx.rts', 'https://h/wrts/out+x']) {
+                const params: Params = { endPoint };
+                const url = buildURL(Type.WRTS, params, 'https');
+                expect(params.streamName).toBe('out+x');
+                expect(url.toString()).toBe(endPoint);
+            }
+        });
+
+        it('should keep an encoded slash or dot in the derived stream name', () => {
+            const params: Params = { endPoint: 'https://h/wrts/a%2Fb%2Ec.rts' };
+            buildURL(Type.WRTS, params, 'https');
+            expect(params.streamName).toBe('a/b.c');
+        });
+
+        it('should keep a malformed escape in the derived stream name', () => {
+            const params: Params = { endPoint: 'https://h/wrts/bad%E0%A4%A' };
+            const url = buildURL(Type.WRTS, params, 'https');
+            expect(params.streamName).toBe('bad%E0%A4%A');
+            expect(url.toString()).toBe('https://h/wrts/bad%E0%A4%A');
+        });
+
+        it('should not touch a given stream name', () => {
+            const params: Params = { endPoint: 'https://h/wrts/out%2Bx.rts', streamName: 'out%2By' };
+            const url = buildURL(Type.WRTS, params, 'https');
+            expect(params.streamName).toBe('out%2By');
+            expect(url.toString()).toBe('https://h/wrts/out%2Bx.rts');
+        });
+
         it('should handle different protocols', () => {
             const params: Params = { endPoint: 'example.com', streamName: 'test' };
             const url = buildURL(Type.HESP, params, 'ws');
