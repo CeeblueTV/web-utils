@@ -175,7 +175,8 @@ export type Params = {
      */
     endPoint: string;
     /**
-     * The name of the stream to join.
+     * The name of the stream to join, decoded or already URL-encoded: {@link buildURL} puts it in the path as is,
+     * so a '/' is kept as a path separator.
      * If `endPoint` is a complete URL and `streamName` is not provided, {@link buildURL} will set this parameter automatically
      * using the second part of the URL's path (the first part being the protocol name), or the first path if no other part exists.
      * The derived name is URL-decoded, `out%2Bx` gives `out+x` (a malformed escape is kept as is).
@@ -288,24 +289,29 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
 
     if (url.pathname.length <= 1) {
         // build ceeblue path!
+        if (!params.streamName) {
+            log('Empty stream name to build the ' + type + ' URL').warn();
+        }
+        // pathname setter encodes a decoded name and keeps an encoded one, no explicit encoding to stay flexible
+        const streamName = params.streamName ?? '';
         switch (type) {
             case Type.HESP:
-                url.pathname = '/hesp/' + params.streamName + '/index.json';
+                url.pathname = '/hesp/' + streamName + '/index.json';
                 break;
             case Type.WEBRTC:
-                url.pathname = '/webrtc/' + params.streamName;
+                url.pathname = '/webrtc/' + streamName;
                 break;
             case Type.WRTS:
-                url.pathname = '/wrts/' + params.streamName + '.' + params.mediaExt;
+                url.pathname = '/wrts/' + streamName + '.' + params.mediaExt;
                 break;
             case Type.DIRECT_STREAMING:
-                url.pathname = '/live/' + params.streamName + '.' + params.mediaExt;
+                url.pathname = '/live/' + streamName + '.' + params.mediaExt;
                 break;
             case Type.META:
-                url.pathname = '/json_' + params.streamName + '.js';
+                url.pathname = '/json_' + streamName + '.js';
                 break;
             case Type.DATA:
-                url.pathname = '/' + params.streamName + '.json';
+                url.pathname = '/' + streamName + '.json';
                 break;
             default:
                 log('Unknown url type ' + type).warn();

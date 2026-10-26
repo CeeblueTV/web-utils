@@ -4,7 +4,7 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Type, Params, buildURL, createMediaKeySystemConfigurations, defineMediaExt } from './Connect';
 
 describe('Connect', () => {
@@ -198,6 +198,43 @@ describe('Connect', () => {
             const url = buildURL(Type.WRTS, params, 'https');
             expect(params.streamName).toBe('out%2By');
             expect(url.toString()).toBe('https://h/wrts/out%2Bx.rts');
+        });
+
+        it('should keep a decoded or an already encoded stream name as is in the path', () => {
+            for (const streamName of [
+                'out+12423351-d0a2-4f0f-98a0-015b73f934f2',
+                'out%2B12423351-d0a2-4f0f-98a0-015b73f934f2'
+            ]) {
+                const params: Params = { endPoint: 'example.com', streamName };
+                const url = buildURL(Type.WRTS, params);
+                expect(url.toString()).toBe('wss://example.com/wrts/' + streamName + '.rts');
+                expect(params.streamName).toBe(streamName);
+            }
+        });
+
+        it('should keep a slash of the stream name as a path separator', () => {
+            const url = buildURL(Type.WRTS, {
+                endPoint: 'example.com',
+                streamName: 'out+12423351-d0a2-4f0f-98a0-015b73f934f2/1-3'
+            });
+            expect(url.toString()).toBe('wss://example.com/wrts/out+12423351-d0a2-4f0f-98a0-015b73f934f2/1-3.rts');
+        });
+
+        it('should derive back the stream name from the built URL', () => {
+            for (const type of [Type.HESP, Type.WEBRTC, Type.WRTS, Type.DIRECT_STREAMING, Type.DATA]) {
+                const streamName = 'out+12423351-d0a2-4f0f-98a0-015b73f934f2';
+                const params: Params = { endPoint: buildURL(type, { endPoint: 'example.com', streamName }).toString() };
+                buildURL(type, params);
+                expect(params.streamName).toBe(streamName);
+            }
+        });
+
+        it('should warn and build the path with an empty stream name', () => {
+            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            const url = buildURL(Type.HESP, { endPoint: 'example.com' });
+            expect(url.toString()).toBe('wss://example.com/hesp//index.json');
+            expect(warnSpy).toHaveBeenCalled();
+            warnSpy.mockRestore();
         });
 
         it('should handle different protocols', () => {
