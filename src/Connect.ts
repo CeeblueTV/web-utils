@@ -289,11 +289,11 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
 
     if (url.pathname.length <= 1) {
         // build ceeblue path!
-        // pathname setter encodes a decoded name and keeps an encoded one, no explicit encoding to stay flexible
         if (!params.streamName) {
             log('Empty stream name to build the ' + type + ' URL').warn();
             params.streamName = ''; // out parameter: set it to explicit '' if was undefined
         }
+        // pathname setter encodes a decoded name and keeps an encoded one, no explicit encoding to stay flexible
         switch (type) {
             case Type.HESP:
                 url.pathname = '/hesp/' + params.streamName + '/index.json';
