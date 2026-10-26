@@ -231,8 +231,10 @@ describe('Connect', () => {
 
         it('should warn and build the path with an empty stream name', () => {
             const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-            const url = buildURL(Type.HESP, { endPoint: 'example.com' });
+            const params: Params = { endPoint: 'example.com' };
+            const url = buildURL(Type.HESP, params);
             expect(url.toString()).toBe('wss://example.com/hesp//index.json');
+            expect(params.streamName).toBe('');
             expect(warnSpy).toHaveBeenCalled();
             warnSpy.mockRestore();
         });

@@ -289,29 +289,29 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
 
     if (url.pathname.length <= 1) {
         // build ceeblue path!
+        // pathname setter encodes a decoded name and keeps an encoded one, no explicit encoding to stay flexible
         if (!params.streamName) {
             log('Empty stream name to build the ' + type + ' URL').warn();
+            params.streamName = ''; // out parameter: set it to explicit '' if was undefined
         }
-        // pathname setter encodes a decoded name and keeps an encoded one, no explicit encoding to stay flexible
-        const streamName = params.streamName ?? '';
         switch (type) {
             case Type.HESP:
-                url.pathname = '/hesp/' + streamName + '/index.json';
+                url.pathname = '/hesp/' + params.streamName + '/index.json';
                 break;
             case Type.WEBRTC:
-                url.pathname = '/webrtc/' + streamName;
+                url.pathname = '/webrtc/' + params.streamName;
                 break;
             case Type.WRTS:
-                url.pathname = '/wrts/' + streamName + '.' + params.mediaExt;
+                url.pathname = '/wrts/' + params.streamName + '.' + params.mediaExt;
                 break;
             case Type.DIRECT_STREAMING:
-                url.pathname = '/live/' + streamName + '.' + params.mediaExt;
+                url.pathname = '/live/' + params.streamName + '.' + params.mediaExt;
                 break;
             case Type.META:
-                url.pathname = '/json_' + streamName + '.js';
+                url.pathname = '/json_' + params.streamName + '.js';
                 break;
             case Type.DATA:
-                url.pathname = '/' + streamName + '.json';
+                url.pathname = '/' + params.streamName + '.json';
                 break;
             default:
                 log('Unknown url type ' + type).warn();
