@@ -271,6 +271,16 @@ export function stringify(
 }
 
 /**
+ * Convert a byte rate to kbps, our convention is to keep rates in Bps in the code
+ * and to convert them only when the value is displayed or sent
+ * @param bytesPerSecond byte rate in Bps
+ * @returns bitrate in kbps
+ */
+export function toKbps(bytesPerSecond: number): number {
+    return (bytesPerSecond * 8) / 1000;
+}
+
+/**
  * Encode a string to a binary representation
  * @param value string value to convert
  * @returns binary conversion
