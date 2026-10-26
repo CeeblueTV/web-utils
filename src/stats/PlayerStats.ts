@@ -9,13 +9,6 @@ import { Loggable } from '../Log';
 import * as Util from '../Util';
 
 /**
- * Converts a byte rate in Bps to a CMCD bitrate in kbps
- */
-function toKbps(bytesPerSecond: number): number {
-    return (bytesPerSecond * 8) / 1000;
-}
-
-/**
  * Collects variable names for player statistics metrics across different projects (e.g., wrts, webrtc).
  * Variables remain undefined if they are not present in the stats for the current project
  * (for example, 'latency' is undefined for webrtc).
@@ -79,19 +72,19 @@ export class PlayerStats extends Loggable {
         }
 
         // Determine object type and set 'br' (bitrate in kbps): use audio, video, or sum of both depending on selected tracks
-        cmcd.br = toKbps((this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0));
+        cmcd.br = Util.toKbps((this.audioTrackBandwidth ?? 0) + (this.videoTrackBandwidth ?? 0));
         if (hasAudio) {
             if (hasVideo) {
                 cmcd.ot = CML.CmcdObjectType.MUXED;
             } else {
                 // just audio
                 cmcd.ot = CML.CmcdObjectType.AUDIO;
-                cmcd.br = toKbps(this.audioTrackBandwidth ?? 0);
+                cmcd.br = Util.toKbps(this.audioTrackBandwidth ?? 0);
             }
         } else if (hasVideo) {
             // just video
             cmcd.ot = CML.CmcdObjectType.VIDEO;
-            cmcd.br = toKbps(this.videoTrackBandwidth ?? 0);
+            cmcd.br = Util.toKbps(this.videoTrackBandwidth ?? 0);
         } else {
             cmcd.ot = CML.CmcdObjectType.OTHER;
         }
@@ -111,7 +104,7 @@ export class PlayerStats extends Loggable {
         }
         if (this.audioByteRate != null || this.videoByteRate != null || this.dataByteRate != null) {
             // Measured mtp CMCD throughput in kbps
-            cmcd.mtp = toKbps((this.audioByteRate ?? 0) + (this.videoByteRate ?? 0) + (this.dataByteRate ?? 0));
+            cmcd.mtp = Util.toKbps((this.audioByteRate ?? 0) + (this.videoByteRate ?? 0) + (this.dataByteRate ?? 0));
         }
         if (playBack != null) {
             cmcd.pr = Number(playBack.toFixed(2)); // Playback Rate
