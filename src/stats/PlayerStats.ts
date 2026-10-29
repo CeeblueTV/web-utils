@@ -8,6 +8,9 @@ import * as CML from '@svta/common-media-library';
 import { Loggable } from '../Log';
 import * as Util from '../Util';
 
+// recvByteRate values a source set, kept off the instance so no internal key shows when a PlayerStats is logged or copied
+const _recvByteRates = new WeakMap<PlayerStats, number>();
+
 /**
  * Collects variable names for player statistics metrics across different projects (e.g., wrts, webrtc).
  * Variables remain undefined if they are not present in the stats for the current project
@@ -34,6 +37,29 @@ export class PlayerStats extends Loggable {
     videoByteRate?: number; // current video Bps
     dataByteRate?: number; // current data Bps
 
+    /**
+     * Current received Bps: the value set when a source measures it, else the sum of the audio, video and data byte
+     * rates, undefined when none of them is known. Enumerable, and in {@link toJSON}, so logs and JSON show it;
+     * an object spread or Object.keys doesn't
+     */
+    get recvByteRate(): number | undefined {
+        const recvByteRate = _recvByteRates.get(this);
+        if (recvByteRate != null) {
+            return recvByteRate;
+        }
+        if (this.audioByteRate == null && this.videoByteRate == null && this.dataByteRate == null) {
+            return undefined;
+        }
+        return (this.audioByteRate ?? 0) + (this.videoByteRate ?? 0) + (this.dataByteRate ?? 0);
+    }
+    set recvByteRate(value: number | undefined) {
+        if (value == null) {
+            _recvByteRates.delete(this);
+        } else {
+            _recvByteRates.set(this, value);
+        }
+    }
+
     videoTrackId?: number; // video track selected
     videoTrackBandwidth?: number; // video bandwidth currently playing, in Bps
     audioTrackId?: number; // audio track selected
@@ -48,6 +74,13 @@ export class PlayerStats extends Loggable {
     nackCount?: number; // current estimated Negative Acknowledgement count
 
     stallCount?: number;
+
+    /**
+     * The fields as JSON, with {@link recvByteRate}, which an accessor on the prototype would otherwise leave out
+     */
+    toJSON(): object {
+        return { ...this, recvByteRate: this.recvByteRate };
+    }
 
     /**
      * Converts the current {@link PlayerStats} snapshot into a CMCD (Common Media Client Data) payload.
@@ -125,3 +158,6 @@ export class PlayerStats extends Loggable {
         return cmcd;
     }
 }
+
+// for...in (Util.stringify, so the logs) lists recvByteRate like the fields
+Object.defineProperty(PlayerStats.prototype, 'recvByteRate', { enumerable: true });
