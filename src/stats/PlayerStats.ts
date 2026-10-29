@@ -34,6 +34,23 @@ export class PlayerStats extends Loggable {
     videoByteRate?: number; // current video Bps
     dataByteRate?: number; // current data Bps
 
+    /**
+     * Current received Bps: the value set when a source measures it, else the sum of the audio, video and data byte
+     * rates, undefined when none of them is known
+     */
+    get recvByteRate(): number | undefined {
+        if (this._recvByteRate != null) {
+            return this._recvByteRate;
+        }
+        if (this.audioByteRate == null && this.videoByteRate == null && this.dataByteRate == null) {
+            return undefined;
+        }
+        return (this.audioByteRate ?? 0) + (this.videoByteRate ?? 0) + (this.dataByteRate ?? 0);
+    }
+    set recvByteRate(value: number | undefined) {
+        this._recvByteRate = value;
+    }
+
     videoTrackId?: number; // video track selected
     videoTrackBandwidth?: number; // video bandwidth currently playing, in Bps
     audioTrackId?: number; // audio track selected
@@ -48,6 +65,8 @@ export class PlayerStats extends Loggable {
     nackCount?: number; // current estimated Negative Acknowledgement count
 
     stallCount?: number;
+
+    private _recvByteRate?: number;
 
     /**
      * Converts the current {@link PlayerStats} snapshot into a CMCD (Common Media Client Data) payload.

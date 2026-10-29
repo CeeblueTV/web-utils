@@ -10,6 +10,38 @@ import { PlayerStats } from './PlayerStats';
 import * as Util from '../Util';
 
 describe('PlayerStats', () => {
+    describe('recvByteRate', () => {
+        it('should sum the audio, video and data byte rates when not set', () => {
+            const stats = new PlayerStats();
+            stats.audioByteRate = 7500;
+            stats.videoByteRate = 187500;
+            stats.dataByteRate = 500;
+            expect(stats.recvByteRate).toBe(195500);
+        });
+
+        it('should count a missing byte rate as 0', () => {
+            const stats = new PlayerStats();
+            stats.videoByteRate = 187500;
+            expect(stats.recvByteRate).toBe(187500);
+        });
+
+        it('should be undefined when no byte rate is known', () => {
+            expect(new PlayerStats().recvByteRate).toBeUndefined();
+        });
+
+        it('should return the value set, and the sum again once unset', () => {
+            const stats = new PlayerStats();
+            stats.audioByteRate = 7500;
+            stats.videoByteRate = 187500;
+            stats.recvByteRate = 200000; // measured on the wire, with the container overhead
+            expect(stats.recvByteRate).toBe(200000);
+            stats.recvByteRate = 0;
+            expect(stats.recvByteRate).toBe(0);
+            stats.recvByteRate = undefined;
+            expect(stats.recvByteRate).toBe(195000);
+        });
+    });
+
     describe('toCmcd', () => {
         it('should generate a CMCD payload for the video track', () => {
             const stats = new PlayerStats();
