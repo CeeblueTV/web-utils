@@ -25,6 +25,13 @@ describe('PlayerStats', () => {
             expect(stats.recvByteRate).toBe(187500);
         });
 
+        it('should count a missing video byte rate as 0', () => {
+            const stats = new PlayerStats();
+            stats.audioByteRate = 7500;
+            stats.dataByteRate = 500;
+            expect(stats.recvByteRate).toBe(8000);
+        });
+
         it('should be undefined when no byte rate is known', () => {
             expect(new PlayerStats().recvByteRate).toBeUndefined();
         });
@@ -39,6 +46,37 @@ describe('PlayerStats', () => {
             expect(stats.recvByteRate).toBe(0);
             stats.recvByteRate = undefined;
             expect(stats.recvByteRate).toBe(195000);
+        });
+    });
+
+    describe('serialization', () => {
+        it('should put recvByteRate in JSON, set or summed, and no internal key', () => {
+            const stats = new PlayerStats();
+            stats.audioByteRate = 7500;
+            stats.videoByteRate = 187500;
+            expect(JSON.parse(JSON.stringify(stats))).toEqual({
+                audioByteRate: 7500,
+                videoByteRate: 187500,
+                recvByteRate: 195000
+            });
+            stats.recvByteRate = 200000;
+            const json = JSON.parse(JSON.stringify(stats));
+            expect(json.recvByteRate).toBe(200000);
+            expect(Object.keys(json).filter(key => key.startsWith('_'))).toEqual([]);
+        });
+
+        it('should leave recvByteRate out of JSON when no byte rate is known', () => {
+            expect(JSON.parse(JSON.stringify(new PlayerStats()))).toEqual({});
+        });
+
+        it('should show recvByteRate in the logs (Util.stringify), and no internal key', () => {
+            const stats = new PlayerStats();
+            stats.videoByteRate = 187500;
+            stats.recvByteRate = 190000;
+            const text = Util.stringify(stats);
+            expect(text).toContain('recvByteRate');
+            expect(text).toContain('190000');
+            expect(text).not.toContain('_recv');
         });
     });
 
@@ -227,6 +265,12 @@ describe('PlayerStats', () => {
             const cmcd = stats.toCmcd(url, [1], prev);
 
             expect(cmcd.bs).toBe(false);
+        });
+
+        it('should count every stall as new without previous stats', () => {
+            const stats = new PlayerStats();
+            stats.stallCount = 1;
+            expect(stats.toCmcd(new URL('https://example.com/live/chunk.ts'), [1]).bs).toBe(true);
         });
     });
 });
