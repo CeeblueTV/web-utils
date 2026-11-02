@@ -10,6 +10,79 @@ import { PlayerStats } from './PlayerStats';
 import * as Util from '../Util';
 
 describe('PlayerStats', () => {
+    describe('getRecvByteRate', () => {
+        it('should sum the audio, video and data byte rates when recvByteRate is not set', () => {
+            const stats = new PlayerStats();
+            stats.audioByteRate = 7500;
+            stats.videoByteRate = 187500;
+            stats.dataByteRate = 500;
+            expect(stats.getRecvByteRate()).toBe(195500);
+        });
+
+        it('should count a missing byte rate as 0', () => {
+            const stats = new PlayerStats();
+            stats.videoByteRate = 187500;
+            expect(stats.getRecvByteRate()).toBe(187500);
+        });
+
+        it('should count a missing video byte rate as 0', () => {
+            const stats = new PlayerStats();
+            stats.audioByteRate = 7500;
+            stats.dataByteRate = 500;
+            expect(stats.getRecvByteRate()).toBe(8000);
+        });
+
+        it('should be undefined when no byte rate is known', () => {
+            expect(new PlayerStats().getRecvByteRate()).toBeUndefined();
+        });
+
+        it('should return recvByteRate when set, and the sum again once unset', () => {
+            const stats = new PlayerStats();
+            stats.audioByteRate = 7500;
+            stats.videoByteRate = 187500;
+            stats.recvByteRate = 200000; // measured on the wire, with the container overhead
+            expect(stats.getRecvByteRate()).toBe(200000);
+            stats.recvByteRate = 0;
+            expect(stats.getRecvByteRate()).toBe(0);
+            stats.recvByteRate = undefined;
+            expect(stats.getRecvByteRate()).toBe(195000);
+        });
+
+        it('should return recvByteRate when no other byte rate is known', () => {
+            const stats = new PlayerStats();
+            stats.recvByteRate = 200000;
+            expect(stats.getRecvByteRate()).toBe(200000);
+        });
+    });
+
+    describe('serialization', () => {
+        it('should put recvByteRate in JSON only when a source set it, never the sum', () => {
+            const stats = new PlayerStats();
+            stats.audioByteRate = 7500;
+            stats.videoByteRate = 187500;
+            expect(JSON.parse(JSON.stringify(stats))).toEqual({ audioByteRate: 7500, videoByteRate: 187500 });
+            stats.recvByteRate = 200000;
+            expect(JSON.parse(JSON.stringify(stats))).toEqual({
+                audioByteRate: 7500,
+                videoByteRate: 187500,
+                recvByteRate: 200000
+            });
+        });
+
+        it('should leave recvByteRate out of JSON when no byte rate is known', () => {
+            expect(JSON.parse(JSON.stringify(new PlayerStats()))).toEqual({});
+        });
+
+        it('should show recvByteRate in the logs (Util.stringify) when a source set it', () => {
+            const stats = new PlayerStats();
+            stats.videoByteRate = 187500;
+            stats.recvByteRate = 190000;
+            const text = Util.stringify(stats);
+            expect(text).toContain('recvByteRate');
+            expect(text).toContain('190000');
+        });
+    });
+
     describe('toCmcd', () => {
         it('should generate a CMCD payload for the video track', () => {
             const stats = new PlayerStats();
@@ -50,6 +123,27 @@ describe('PlayerStats', () => {
         it('should set mtp from dataByteRate when audio and video byte rates are missing', () => {
             const stats = new PlayerStats();
             stats.dataByteRate = 64000; // 512 kbps
+
+            const url = new URL('https://example.com/live/chunk.ts');
+            const cmcd = stats.toCmcd(url, [99]);
+
+            expect(cmcd.mtp).toBe(512);
+        });
+
+        it('should set mtp from recvByteRate over the sum of the byte rates when a source set it', () => {
+            const stats = new PlayerStats();
+            stats.videoByteRate = 1000; // 8 kbps
+            stats.recvByteRate = 2000; // 16 kbps
+
+            const url = new URL('https://example.com/live/chunk.ts');
+            const cmcd = stats.toCmcd(url, [99]);
+
+            expect(cmcd.mtp).toBe(16);
+        });
+
+        it('should set mtp from recvByteRate when no other byte rate is known', () => {
+            const stats = new PlayerStats();
+            stats.recvByteRate = 64000; // 512 kbps
 
             const url = new URL('https://example.com/live/chunk.ts');
             const cmcd = stats.toCmcd(url, [99]);
@@ -195,6 +289,12 @@ describe('PlayerStats', () => {
             const cmcd = stats.toCmcd(url, [1], prev);
 
             expect(cmcd.bs).toBe(false);
+        });
+
+        it('should count every stall as new without previous stats', () => {
+            const stats = new PlayerStats();
+            stats.stallCount = 1;
+            expect(stats.toCmcd(new URL('https://example.com/live/chunk.ts'), [1]).bs).toBe(true);
         });
     });
 });
