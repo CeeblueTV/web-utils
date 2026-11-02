@@ -33,6 +33,7 @@ export class PlayerStats extends Loggable {
     audioByteRate?: number; // current audio Bps
     videoByteRate?: number; // current video Bps
     dataByteRate?: number; // current data Bps
+    recvByteRate?: number; // current received Bps measured by a source, see getRecvByteRate
 
     videoTrackId?: number; // video track selected
     videoTrackBandwidth?: number; // video bandwidth currently playing, in Bps
@@ -48,6 +49,24 @@ export class PlayerStats extends Loggable {
     nackCount?: number; // current estimated Negative Acknowledgement count
 
     stallCount?: number;
+
+    /**
+     * Computes the current received Bps: {@link recvByteRate} when a source measured it, else the sum of the audio,
+     * video and data byte rates
+     * @returns the received Bps, undefined when neither {@link recvByteRate} nor any of the byte rates is known
+     */
+    getRecvByteRate(): number | undefined {
+        // If recvByteRate is set, return it
+        if (this.recvByteRate != null) {
+            return this.recvByteRate;
+        }
+        // If none of the byte rates are known, return undefined
+        if (this.audioByteRate == null && this.videoByteRate == null && this.dataByteRate == null) {
+            return undefined;
+        }
+        // Otherwise, return the sum of the known byte rates
+        return (this.audioByteRate ?? 0) + (this.videoByteRate ?? 0) + (this.dataByteRate ?? 0);
+    }
 
     /**
      * Converts the current {@link PlayerStats} snapshot into a CMCD (Common Media Client Data) payload.
@@ -102,9 +121,10 @@ export class PlayerStats extends Loggable {
         if (this.bufferAmount != null) {
             cmcd.bl = this.bufferAmount; // Buffer Length
         }
-        if (this.audioByteRate != null || this.videoByteRate != null || this.dataByteRate != null) {
+        const recvByteRate = this.getRecvByteRate();
+        if (recvByteRate != null) {
             // Measured mtp CMCD throughput in kbps
-            cmcd.mtp = Util.toKbps((this.audioByteRate ?? 0) + (this.videoByteRate ?? 0) + (this.dataByteRate ?? 0));
+            cmcd.mtp = Util.toKbps(recvByteRate);
         }
         if (playBack != null) {
             cmcd.pr = Number(playBack.toFixed(2)); // Playback Rate
