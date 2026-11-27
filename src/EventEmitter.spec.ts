@@ -4,7 +4,7 @@
  * See file LICENSE or go to https://spdx.org/licenses/AGPL-3.0-or-later.html for full license details.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { EventEmitter } from './EventEmitter';
 
 // Test class that extends EventEmitter
@@ -35,6 +35,10 @@ describe('EventEmitter', () => {
     beforeEach(() => {
         emitter = new TestEmitter();
         consoleSpy = vi.spyOn(console, 'log');
+    });
+
+    afterEach(() => {
+        consoleSpy.mockRestore();
     });
 
     describe('default event handling', () => {
