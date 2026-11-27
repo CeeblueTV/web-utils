@@ -96,6 +96,14 @@ describe('Util', () => {
         });
     });
 
+    describe('toKbps', () => {
+        it('should convert a byte rate in Bps to kbps', () => {
+            expect(Util.toKbps(250000)).toBe(2000);
+            expect(Util.toKbps(12000)).toBe(96);
+            expect(Util.toKbps(0)).toBe(0);
+        });
+    });
+
     describe('hash', () => {
         it('should return a deterministic 14-character hexadecimal hash', () => {
             expect(Util.hash('Hello 😭')).toBe('127c8d5f428cf2');

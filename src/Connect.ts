@@ -175,9 +175,11 @@ export type Params = {
      */
     endPoint: string;
     /**
-     * The name of the stream to join.
+     * The name of the stream to join, decoded or already URL-encoded: {@link buildURL} puts it in the path as is,
+     * so a '/' is kept as a path separator.
      * If `endPoint` is a complete URL and `streamName` is not provided, {@link buildURL} will set this parameter automatically
      * using the second part of the URL's path (the first part being the protocol name), or the first path if no other part exists.
+     * The derived name is URL-decoded, `out%2Bx` gives `out+x` (a malformed escape is kept as is).
      */
     streamName?: string;
     /**
@@ -287,6 +289,11 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
 
     if (url.pathname.length <= 1) {
         // build ceeblue path!
+        if (!params.streamName) {
+            log('Empty stream name to build the ' + type + ' URL').warn();
+            params.streamName = ''; // out parameter: set it to explicit '' if was undefined
+        }
+        // pathname setter encodes a decoded name and keeps an encoded one, no explicit encoding to stay flexible
         switch (type) {
             case Type.HESP:
                 url.pathname = '/hesp/' + params.streamName + '/index.json';
@@ -315,7 +322,14 @@ export function buildURL(type: Type, params: Params, protocol: string = 'wss'): 
         if (!params.streamName) {
             // extract the second part of the URL's path (the first part being the protocol name), or the first path if no other part exists
             const parts = url.pathname.split('/');
+            // take the base file before decoding, so that an encoded '/' or '.' stays part of the name
             params.streamName = Util.getBaseFile(parts[2] || parts[1] || parts[0]);
+            try {
+                // pathname is percent-encoded, decode it to get the same name however the URL was written
+                params.streamName = decodeURIComponent(params.streamName);
+            } catch {
+                // malformed escape: keep the name as is
+            }
         }
     }
     if (params.accessToken) {

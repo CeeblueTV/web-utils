@@ -57,7 +57,7 @@ This monorepo also contains built-in documentation about the APIs in the library
 npm run build:docs
 ```
 
-Once generated, open the `index.html` file located in the `docs` folder (`./docs/index.html`) with your browser.
+Once generated, open the `index.html` file located in the `dist/docs/api` folder (`./dist/docs/api/index.html`) with your browser.
 
 > [!NOTE]
 >

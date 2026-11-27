@@ -197,6 +197,23 @@ describe('BinaryReader', () => {
             expect(reader.read7Bit()).toBe(0);
         });
 
+        it.each([[[0x80]], [[0x85]], [[0x81, 0x81]], [[0xff, 0xff, 0xff]]])(
+            'should return zero for 7-bit encoded values cut by the end of data %j',
+            bytes => {
+                const reader = new BinaryReader(new Uint8Array(bytes));
+
+                expect(reader.read7Bit()).toBe(0);
+                expect(reader.available()).toBe(0);
+            }
+        );
+
+        it('should read a 7-bit encoded value ending exactly at the end of data', () => {
+            const reader = new BinaryReader(new Uint8Array([0x80, 0x80, 0x01]));
+
+            expect(reader.read7Bit()).toBe(16384);
+            expect(reader.available()).toBe(0);
+        });
+
         it('should read strings correctly', () => {
             const text = 'Hello\0';
             const data = new Uint8Array(text.split('').map(c => c.charCodeAt(0)));

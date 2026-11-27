@@ -17,41 +17,52 @@ export enum LogLevel {
 }
 
 /**
- * Log interface to deal with log everywhere:
- * - filter log level: filter log level independantly of the browser
- * - subscribe logs: listen logs to effectuate some specific job related logs
- * - intercept logs: intercept logs to change the default behavior
- * - redirect logs: redirect logs to one other logger engine
- * - redefine logs: change log text like adding a prefix
+ * Logging interface used throughout the library:
+ * - filter logs independently of the browser
+ * - subscribe to logs to run some job on them
+ * - observe every log before level filtering
+ * - intercept logs to change the default behavior
+ * - redirect logs to another logging engine
+ * - redefine log messages, for example by adding a prefix
  *
- * You have 4 {@link LogLevel} 'error','warn','info',and 'debug', as commonly managed by browsers.
- * You can use {@link ILog.level} or {@link ILog.on} to customer log level and behavior.
+ * Four {@link LogLevel} values are available: 'error', 'warn', 'info', and 'debug', matching the
+ * browser console methods.
+ * Use {@link ILog.level}, {@link ILog.on}, and {@link ILog.observe} to customize log handling.
  *
  * @example
- * // filter log level globally, independantly of the browser
+ * // filter log level globally, independently of the browser
  * import { log } from '@ceeblue/web-utils';
- * log.level = LogLevel.WARN; // displays errors and warns
+ * log.level = LogLevel.WARN; // displays errors and warnings
  *
- * // filter log level only for Player compoment
- * player.log.level = false; // no logs at all for player compoment
+ * // filter log level only for the Player component
+ * player.log.level = false; // no logs at all for the Player component
  *
- * // Intercept and redirect all the logs to the console (default behavior)
+ * // Intercept and redirect all logs to the console, like the default behavior
+ * // but without calling the local log.on handlers
  * import { log } from '@ceeblue/web-utils';
  * log.on = (level:LogLevel,args:unknown[]) => {
  *    console[level](...args.splice(0)); // args is empty after this call = final interception
  * }
  *
- * // Intercept the logs from Player compoment and displays only WARN logs
+ * // Intercept logs from the Player component and display only WARN logs
  * player.log.on = (level:LogLevel,args:unknown[]) => {
  *    if (level !== LogLevel.WARN) {
  *       args.length = 0; // args is empty after this call = final interception
  *    }
  * }
  *
- * // Subscribe and redirect all the logs to a file logger
+ * // Subscribe and redirect all logs to a file logger
  * import { log } from '@ceeblue/web-utils';
  * log.on = (level:LogLevel,args:unknown[]) => {
- *    fileLogger[level](...args); // args stays unchanged to let's continue the default behavior
+ *    fileLogger[level](...args); // unchanged args allow the default behavior to continue
+ * }
+ *
+ * // Observe every log of the Player component, regardless of the configured log levels
+ * player.log.observe = (level:LogLevel,args:readonly unknown[]) => {
+ *    // read-only: the console and the log.on handlers are unaffected
+ *    // format the args rather than retain the live objects they hold,
+ *    // noBin skips the binary data (media samples)
+ *    telemetry.push(level, Util.stringify(args, { noBin: true }));
  * }
  *
  * // Redefine the log to add some prefix indication
@@ -69,16 +80,29 @@ export interface ILog {
      */
     (...args: unknown[]): Log;
     /**
-     * Intercept,redefine or redirect any log
-     * If you clear args you intercept the log and nothing happen more after this call.
+     * Intercept, redefine, or redirect any log.
+     * Clearing `args` intercepts the log, preventing subsequent handlers and console output.
+     * An exception thrown by the handler does not reach the caller: it is rethrown in a microtask,
+     * where it is reported as an uncaught error. Only the first failure of a handler is reported.
      * @param level log level
-     * @param args args
-     * @returns
+     * @param args mutable args of the log: clear them to intercept the log
      */
     on: (level: LogLevel, args: unknown[]) => void;
     /**
-     * Change log level, default log level is {@link LogLevel.INFO},
-     * Boolean can be user to lets pass all the logs with `true` or disables all the logs with `false`.
+     * Observe every log before any level filter or {@link ILog.on} handler, without being able to
+     * change it: the console and the {@link ILog.on} handlers behave as without observer.
+     * On the global {@link log}, the observer receives logs from every component; otherwise it
+     * receives the logs emitted through this logger, including those of the components bound to it.
+     *
+     * Logs emitted synchronously while an observer runs are not observed, to prevent recursion.
+     * @param level log level
+     * @param args frozen shallow copy of the arguments. Referenced objects are not cloned or frozen;
+     * avoid retaining them when they may contain large or mutable values such as media samples.
+     */
+    observe?: (level: LogLevel, args: readonly unknown[]) => void;
+    /**
+     * Change log level, default log level is {@link LogLevel.INFO}.
+     * A boolean can be used to let every log pass with `true` or disable every log with `false`.
      * @remarks To debug production code without modifying it you can use a special query parameter
      * called !cb-override-log-level to override this configuration.
      */
@@ -99,6 +123,37 @@ _charLevels[101] = _charLevels[69] = 1; // error
 _charLevels[119] = _charLevels[87] = 2; // warn
 _charLevels[105] = _charLevels[73] = 3; // info
 _charLevels[100] = _charLevels[68] = 4; // debug
+
+// true while an observer runs: the logs it emits are not observed, otherwise it would recurse
+let _observing = false;
+// methods already reported as failing: reporting every failure would flood the uncaught error handlers,
+// and loop forever if one of them logs the error through a failing method
+const _failedMethods = new WeakSet<Function>();
+
+/**
+ * Call an optional log handler.
+ * Prevent the caller from catching and misattributing logging errors.
+ * Report them asynchronously as uncaught errors instead.
+ */
+function safeCall<This, Args extends unknown[]>(
+    receiver: This,
+    method: ((this: This, ...args: Args) => void) | undefined,
+    ...args: Args
+) {
+    if (!method) {
+        return;
+    }
+    try {
+        method.apply(receiver, args);
+    } catch (e) {
+        if (!_failedMethods.has(method)) {
+            _failedMethods.add(method);
+            queueMicrotask(() => {
+                throw e;
+            });
+        }
+    }
+}
 
 /**
  * Log instance
@@ -145,9 +200,7 @@ export class Log {
         if (logLevel !== true && _charLevels[level.charCodeAt(0)] > _charLevels[logLevel.charCodeAt(0)]) {
             return false;
         }
-        if (localLog.on) {
-            localLog.on(level, this._args);
-        }
+        safeCall(localLog, localLog.on, level, this._args);
         return this._args.length ? true : false;
     }
 
@@ -155,6 +208,20 @@ export class Log {
         if (!this._done) {
             this._done = true;
             --_logging;
+        }
+        // observers see every log, before any filter or interception
+        if (!_observing && (log.observe || this._log.observe)) {
+            try {
+                _observing = true;
+                // frozen copy: an observer cannot change the argument list or see it emptied by an interception
+                const args = Object.freeze(this._args.slice());
+                safeCall(log, log.observe, level, args);
+                if (this._log !== log) {
+                    safeCall(this._log, this._log.observe, level, args);
+                }
+            } finally {
+                _observing = false;
+            }
         }
         // call the global onLog in first (global filter)
         if (!this._onLog(log, level)) {
